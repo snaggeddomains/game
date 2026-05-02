@@ -217,7 +217,22 @@ async function main() {
   let skipped = 0;
 
   for (let i = 0; i < toInsert.length; i += BATCH) {
-    const batch = toInsert.slice(i, i + BATCH);
+    // Normalise every record to the same set of keys so PostgREST generates a
+    // consistent INSERT column list. If objects have different keys (e.g. a JSON
+    // import where `category` or `last_checked_at` are absent on some rows),
+    // PostgREST includes the missing column in the header but emits fewer value
+    // expressions for those rows, producing: "INSERT has more target columns
+    // than expressions" (PostgreSQL error 42601).
+    const batch = toInsert.slice(i, i + BATCH).map((r) => ({
+      domain: r.domain,
+      tld: r.tld,
+      mode: r.mode,
+      category: r.category ?? null,
+      difficulty: r.difficulty,
+      availability_status: r.availability_status,
+      last_checked_at: r.last_checked_at ?? null,
+      source: r.source,
+    }));
     const { error } = await supabase
       .from('domains')
       .upsert(batch, { onConflict: 'domain,mode', ignoreDuplicates: false });
