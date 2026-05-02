@@ -71,7 +71,7 @@ export default function GamePage() {
     setError(null);
 
     try {
-      const res = await fetch(`/game/api/domains?mode=${selectedMode}`);
+      const res = await fetch(`/api/domains?mode=${selectedMode}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Failed to load domains.');
       setDomains(data.domains);
@@ -91,7 +91,7 @@ export default function GamePage() {
 
       // Fire-and-forget analytics
       try {
-        await fetch('/game/api/game-result', {
+        await fetch('/api/game-result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

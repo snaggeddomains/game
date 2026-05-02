@@ -20,7 +20,7 @@ export default function EmailCapture({ mode, score }: Props) {
     setErrorMsg('');
 
     try {
-      const res = await fetch('/game/api/email', {
+      const res = await fetch('/api/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), mode, score }),

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createServiceClient } from '@/lib/supabase';
 import type { GameMode } from '@/lib/types';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -17,6 +17,8 @@ export async function POST(req: NextRequest) {
   if (!email || !EMAIL_RE.test(email)) {
     return NextResponse.json({ error: 'A valid email address is required.' }, { status: 400 });
   }
+
+  const supabase = createServiceClient();
 
   const { error } = await supabase.from('game_email_captures').insert({
     email: email.toLowerCase().trim(),

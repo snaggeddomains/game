@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createServiceClient } from '@/lib/supabase';
 import type { GameMode, RoundResult } from '@/lib/types';
 
 interface GameResultPayload {
@@ -25,6 +25,8 @@ export async function POST(req: NextRequest) {
 
   const correctCount = rounds.filter((r) => r.correct).length;
   const accuracy = rounds.length > 0 ? (correctCount / rounds.length) * 100 : 0;
+
+  const supabase = createServiceClient();
 
   // Save anonymised aggregate result
   const { error: resultError } = await supabase.from('game_results').insert({
