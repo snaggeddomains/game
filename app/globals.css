@@ -1,0 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    height: 100%;
+    background-color: #faf3ec;
+    color: #1b3553;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Anton', Impact, system-ui, sans-serif;
+  }
+
+  /* Domain card border flash on reveal */
+  .card-glow-correct {
+    box-shadow: 0 0 0 3px #2e7fa5, 0 8px 40px 0 rgba(46, 127, 165, 0.18);
+  }
+  .card-glow-wrong {
+    box-shadow: 0 0 0 3px #c0392b, 0 8px 40px 0 rgba(192, 57, 43, 0.18);
+  }
+
+  /* Snagged brand button (coral CTA — matches nav "Contact us" button) */
+  .btn-coral {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl
+      bg-brand-coral px-6 py-3 font-bold text-white transition-all duration-150
+      hover:bg-brand-salmondark active:scale-95
+      disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Navy button */
+  .btn-navy {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl
+      bg-brand-navy px-6 py-3 font-bold text-white transition-all duration-150
+      hover:bg-[#142a42] active:scale-95
+      disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Guess buttons */
+  .btn-guess {
+    @apply relative flex flex-col items-center justify-center gap-1 rounded-2xl
+      border-2 border-game-border bg-white px-6 py-5 text-center
+      font-bold text-brand-navy shadow-sm transition-all duration-150
+      active:scale-95 select-none cursor-pointer;
+  }
+  .btn-guess:hover {
+    @apply border-brand-navy/30 shadow-md;
+  }
+  .btn-guess:disabled {
+    @apply cursor-not-allowed opacity-40;
+  }
+
+  /* Wave decoration used at bottom of header */
+  .wave-divider {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+    line-height: 0;
+  }
+}
