@@ -39,40 +39,30 @@ interface DomainRecord {
 // Replace this function with a real API call in production.
 // ---------------------------------------------------------------------------
 async function checkDomain(domain: string): Promise<AvailabilityStatus> {
-  // TODO: Replace with real domain availability check, e.g.:
-  //
-  // const apiKey = process.env.DOMAIN_CHECK_API_KEY;
-  // const res = await fetch(
-  //   `https://api.domainr.com/v2/status?domain=${domain}&client_id=${apiKey}`
-  // );
-  // const data = await res.json();
-  // const status = data.status?.[0]?.summary;
-  // if (status === 'inactive') return 'available';
-  // if (status === 'active') return 'taken';
-  // return 'unknown';
+  const apiKey = process.env.GODADDY_API_KEY;
+  const apiSecret = process.env.GODADDY_API_SECRET;
 
-  // Placeholder: simulate a realistic check result based on well-known heuristics
-  await new Promise((r) => setTimeout(r, 50)); // simulate network latency
+  if (!apiKey || !apiSecret) {
+    throw new Error('GODADDY_API_KEY and GODADDY_API_SECRET must be set in .env.local');
+  }
 
-  // Well-known brands → taken
-  const knownTaken = new Set([
-    'google.com', 'amazon.com', 'facebook.com', 'netflix.com', 'spotify.com',
-    'twitter.com', 'youtube.com', 'reddit.com', 'instagram.com', 'tiktok.com',
-    'uber.com', 'airbnb.com', 'snapchat.com', 'linkedin.com', 'pinterest.com',
-    'twitch.tv', 'dropbox.com', 'zoom.us', 'slack.com', 'discord.com',
-    'stripe.com', 'notion.com', 'figma.com', 'vercel.com', 'openai.com',
-    'anthropic.com', 'github.com', 'gitlab.com', 'heroku.com', 'cloudflare.com',
-    'roblox.com', 'minecraft.net', 'pokemon.com', 'pbskids.org', 'coolmathgames.com',
-    'tinder.com', 'bumble.com', 'grindr.com', 'onlyfans.com', 'playboy.com',
-    'match.com', 'okcupid.com', 'pof.com', 'zoosk.com', 'hinge.co',
-    'airtable.com', 'webflow.com', 'segment.com', 'mixpanel.com', 'amplitude.com',
-  ]);
+  const res = await fetch(
+    `https://api.godaddy.com/v1/domains/available?domain=${encodeURIComponent(domain)}`,
+    {
+      headers: {
+        Authorization: `sso-key ${apiKey}:${apiSecret}`,
+        Accept: 'application/json',
+      },
+    }
+  );
 
-  if (knownTaken.has(domain)) return 'taken';
+  if (!res.ok) {
+    console.warn(`[check] GoDaddy API error for ${domain}: ${res.status} ${res.statusText}`);
+    return 'unknown';
+  }
 
-  // Everything else from the generated banks is likely available
-  // In production this should be a real API check
-  return 'available';
+  const data = await res.json();
+  return data.available === true ? 'available' : 'taken';
 }
 
 // ---------------------------------------------------------------------------
