@@ -76,8 +76,10 @@ async function checkDomain(domain: string): Promise<'available' | 'taken' | 'unk
 // ---------------------------------------------------------------------------
 async function main() {
   const args = process.argv.slice(2);
-  const modeArg = args[args.indexOf('--mode') + 1] as string | undefined;
-  const limitArg = parseInt(args[args.indexOf('--limit') + 1] ?? '0', 10);
+  const modeIdx = args.indexOf('--mode');
+  const modeArg = modeIdx !== -1 ? args[modeIdx + 1] : undefined;
+  const limitIdx = args.indexOf('--limit');
+  const limitArg = limitIdx !== -1 ? parseInt(args[limitIdx + 1] ?? '0', 10) : 0;
   const dryRun = args.includes('--dry-run');
   const concurrency = 5;
   const batchDelay = 250; // ms between batches
