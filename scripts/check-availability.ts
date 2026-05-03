@@ -1,52 +1,44 @@
 /**
  * check-availability.ts
  *
- * Reads generated-domains.json (or a file you specify), checks availability
- * of each domain via a placeholder DNS/WHOIS API, and writes the results to
- * checked-domains.json.
+ * Pulls all "available" domains from Supabase, verifies each one via the
+ * GoDaddy API, and writes the real status back to the database.
  *
  * Usage:
  *   npm run check-availability
- *   npx tsx scripts/check-availability.ts --input generated-domains.json
+ *   npx tsx scripts/check-availability.ts --mode founder
+ *   npx tsx scripts/check-availability.ts --limit 100   # test run
+ *   npx tsx scripts/check-availability.ts --dry-run
  *
- * In production, replace the `checkDomain` function with a real API call.
- * Recommended services:
- *   - Domainr API  (https://domainr.com/docs/api)
- *   - GoDaddy Domains API
- *   - Namecheap API
- *   - WhoisXML API
- *
- * Keep your API key in DOMAIN_CHECK_API_KEY env var (server-side only).
+ * Requirements:
+ *   - NEXT_PUBLIC_SUPABASE_URL in .env.local
+ *   - SUPABASE_SERVICE_ROLE_KEY in .env.local
+ *   - GODADDY_API_KEY in .env.local
+ *   - GODADDY_API_SECRET in .env.local
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 
 dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 
-import type { AvailabilityStatus } from '../lib/types';
+import { createClient } from '@supabase/supabase-js';
 
-interface DomainRecord {
-  domain: string;
-  tld: string;
-  mode: string;
-  category: string;
-  difficulty: string;
-  source: string;
-  availability_status?: AvailabilityStatus;
-  last_checked_at?: string;
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } }
+);
 
 // ---------------------------------------------------------------------------
-// GoDaddy domain availability checker
+// GoDaddy availability check
 // ---------------------------------------------------------------------------
-async function checkDomain(domain: string): Promise<AvailabilityStatus> {
+async function checkDomain(domain: string): Promise<'available' | 'taken' | 'unknown'> {
   const apiKey = process.env.GODADDY_API_KEY;
   const apiSecret = process.env.GODADDY_API_SECRET;
 
   if (!apiKey || !apiSecret) {
-    throw new Error('Missing GODADDY_API_KEY or GODADDY_API_SECRET in environment.');
+    throw new Error('Missing GODADDY_API_KEY or GODADDY_API_SECRET in .env.local');
   }
 
   try {
@@ -60,8 +52,14 @@ async function checkDomain(domain: string): Promise<AvailabilityStatus> {
       }
     );
 
+    if (res.status === 429) {
+      console.warn(`[check] Rate limited — waiting 2s before retry`);
+      await new Promise((r) => setTimeout(r, 2000));
+      return checkDomain(domain);
+    }
+
     if (!res.ok) {
-      console.warn(`[check] GoDaddy API error for ${domain}: ${res.status}`);
+      console.warn(`[check] GoDaddy ${res.status} for ${domain}`);
       return 'unknown';
     }
 
@@ -74,63 +72,78 @@ async function checkDomain(domain: string): Promise<AvailabilityStatus> {
 }
 
 // ---------------------------------------------------------------------------
-// Rate-limited batch runner
-// ---------------------------------------------------------------------------
-async function checkBatch(
-  domains: DomainRecord[],
-  concurrency = 5
-): Promise<DomainRecord[]> {
-  const results: DomainRecord[] = [];
-  const now = new Date().toISOString();
-
-  for (let i = 0; i < domains.length; i += concurrency) {
-    const batch = domains.slice(i, i + concurrency);
-    const checked = await Promise.all(
-      batch.map(async (d) => {
-        const status = await checkDomain(d.domain);
-        return {
-          ...d,
-          availability_status: status,
-          last_checked_at: now,
-        };
-      })
-    );
-    results.push(...checked);
-    console.log(`[check] ${Math.min(i + concurrency, domains.length)} / ${domains.length} checked`);
-    await new Promise((r) => setTimeout(r, 200)); // stay within GoDaddy rate limits
-  }
-
-  return results;
-}
-
-// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 async function main() {
   const args = process.argv.slice(2);
-  const inputArg = args[args.indexOf('--input') + 1] ?? 'generated-domains.json';
-  const inputPath = path.join(process.cwd(), inputArg);
+  const modeArg = args[args.indexOf('--mode') + 1] as string | undefined;
+  const limitArg = parseInt(args[args.indexOf('--limit') + 1] ?? '0', 10);
+  const dryRun = args.includes('--dry-run');
+  const concurrency = 5;
+  const batchDelay = 250; // ms between batches
 
-  if (!fs.existsSync(inputPath)) {
-    console.error(`[check] Input file not found: ${inputPath}`);
-    console.error('[check] Run "npm run generate-domains" first.');
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('[check] Missing Supabase env vars. Check .env.local.');
     process.exit(1);
   }
 
-  const domains: DomainRecord[] = JSON.parse(fs.readFileSync(inputPath, 'utf-8'));
-  console.log(`[check] Checking availability for ${domains.length} domains…`);
+  // Fetch domains marked available (the ones we generated but haven't verified)
+  let query = supabase
+    .from('domains')
+    .select('id, domain, mode')
+    .eq('availability_status', 'available');
 
-  const checked = await checkBatch(domains);
+  if (modeArg) query = query.eq('mode', modeArg);
+  if (limitArg > 0) query = query.limit(limitArg);
 
-  const available = checked.filter((d) => d.availability_status === 'available').length;
-  const taken = checked.filter((d) => d.availability_status === 'taken').length;
+  const { data: domains, error } = await query;
 
-  const outPath = path.join(process.cwd(), 'checked-domains.json');
-  fs.writeFileSync(outPath, JSON.stringify(checked, null, 2));
+  if (error) {
+    console.error('[check] Failed to fetch domains:', error.message);
+    process.exit(1);
+  }
 
-  console.log(`\n[check] Results: ${available} available, ${taken} taken, ${checked.length - available - taken} unknown`);
-  console.log(`[check] Wrote to checked-domains.json`);
-  console.log('[check] Next step: npm run seed');
+  console.log(`[check] ${domains.length} domains to verify${modeArg ? ` (mode: ${modeArg})` : ''}${dryRun ? ' [DRY RUN]' : ''}`);
+
+  let available = 0;
+  let taken = 0;
+  let unknown = 0;
+  let updated = 0;
+  const now = new Date().toISOString();
+
+  for (let i = 0; i < domains.length; i += concurrency) {
+    const batch = domains.slice(i, i + concurrency);
+
+    await Promise.all(
+      batch.map(async (row) => {
+        const status = await checkDomain(row.domain);
+
+        if (status === 'available') available++;
+        else if (status === 'taken') taken++;
+        else unknown++;
+
+        if (!dryRun) {
+          const { error: updateError } = await supabase
+            .from('domains')
+            .update({ availability_status: status, last_checked_at: now })
+            .eq('id', row.id);
+
+          if (updateError) {
+            console.warn(`[check] Failed to update ${row.domain}:`, updateError.message);
+          } else {
+            updated++;
+          }
+        }
+      })
+    );
+
+    const done = Math.min(i + concurrency, domains.length);
+    console.log(`[check] ${done} / ${domains.length} — available: ${available}, taken: ${taken}, unknown: ${unknown}`);
+    await new Promise((r) => setTimeout(r, batchDelay));
+  }
+
+  console.log(`\n[check] Done. Available: ${available}, Taken: ${taken}, Unknown: ${unknown}`);
+  if (!dryRun) console.log(`[check] Updated ${updated} records in Supabase.`);
 }
 
 main().catch((err) => {
