@@ -59,7 +59,8 @@ async function checkDomain(domain: string): Promise<'available' | 'taken' | 'unk
     }
 
     if (!res.ok) {
-      console.warn(`[check] GoDaddy ${res.status} for ${domain}`);
+      const body = await res.text();
+      console.warn(`[check] GoDaddy ${res.status} for ${domain}: ${body}`);
       return 'unknown';
     }
 
