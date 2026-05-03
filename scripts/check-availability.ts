@@ -41,16 +41,17 @@ async function checkDomain(domain: string): Promise<'available' | 'taken' | 'unk
     throw new Error('Missing GODADDY_API_KEY or GODADDY_API_SECRET in .env.local');
   }
 
+  const url = `https://api.godaddy.com/v1/domains/available?domain=${encodeURIComponent(domain)}`;
+
   try {
-    const res = await fetch(
-      `https://api.godaddy.com/v1/domains/available?domain=${encodeURIComponent(domain)}&checkType=FAST`,
-      {
-        headers: {
-          Authorization: `sso-key ${apiKey}:${apiSecret}`,
-          Accept: 'application/json',
-        },
-      }
-    );
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `sso-key ${apiKey}:${apiSecret}`,
+        Accept: 'application/json',
+      },
+    });
+
+    const body = await res.text();
 
     if (res.status === 429) {
       console.warn(`[check] Rate limited — waiting 2s before retry`);
@@ -59,12 +60,11 @@ async function checkDomain(domain: string): Promise<'available' | 'taken' | 'unk
     }
 
     if (!res.ok) {
-      const body = await res.text();
-      console.warn(`[check] GoDaddy ${res.status} for ${domain}: ${body}`);
+      console.warn(`[check] GoDaddy ${res.status} for ${domain} — body: ${body || '(empty)'}`);
       return 'unknown';
     }
 
-    const data = await res.json();
+    const data = JSON.parse(body);
     return data.available === true ? 'available' : 'taken';
   } catch (err) {
     console.warn(`[check] Network error for ${domain}:`, err);
