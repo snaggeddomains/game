@@ -21,6 +21,10 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as dotenv from 'dotenv';
+
+dotenv.config({ path: path.join(process.cwd(), '.env.local') });
+
 import type { AvailabilityStatus } from '../lib/types';
 
 interface DomainRecord {
@@ -35,44 +39,38 @@ interface DomainRecord {
 }
 
 // ---------------------------------------------------------------------------
-// Placeholder availability checker
-// Replace this function with a real API call in production.
+// GoDaddy domain availability checker
 // ---------------------------------------------------------------------------
 async function checkDomain(domain: string): Promise<AvailabilityStatus> {
-  // TODO: Replace with real domain availability check, e.g.:
-  //
-  // const apiKey = process.env.DOMAIN_CHECK_API_KEY;
-  // const res = await fetch(
-  //   `https://api.domainr.com/v2/status?domain=${domain}&client_id=${apiKey}`
-  // );
-  // const data = await res.json();
-  // const status = data.status?.[0]?.summary;
-  // if (status === 'inactive') return 'available';
-  // if (status === 'active') return 'taken';
-  // return 'unknown';
+  const apiKey = process.env.GODADDY_API_KEY;
+  const apiSecret = process.env.GODADDY_API_SECRET;
 
-  // Placeholder: simulate a realistic check result based on well-known heuristics
-  await new Promise((r) => setTimeout(r, 50)); // simulate network latency
+  if (!apiKey || !apiSecret) {
+    throw new Error('Missing GODADDY_API_KEY or GODADDY_API_SECRET in environment.');
+  }
 
-  // Well-known brands → taken
-  const knownTaken = new Set([
-    'google.com', 'amazon.com', 'facebook.com', 'netflix.com', 'spotify.com',
-    'twitter.com', 'youtube.com', 'reddit.com', 'instagram.com', 'tiktok.com',
-    'uber.com', 'airbnb.com', 'snapchat.com', 'linkedin.com', 'pinterest.com',
-    'twitch.tv', 'dropbox.com', 'zoom.us', 'slack.com', 'discord.com',
-    'stripe.com', 'notion.com', 'figma.com', 'vercel.com', 'openai.com',
-    'anthropic.com', 'github.com', 'gitlab.com', 'heroku.com', 'cloudflare.com',
-    'roblox.com', 'minecraft.net', 'pokemon.com', 'pbskids.org', 'coolmathgames.com',
-    'tinder.com', 'bumble.com', 'grindr.com', 'onlyfans.com', 'playboy.com',
-    'match.com', 'okcupid.com', 'pof.com', 'zoosk.com', 'hinge.co',
-    'airtable.com', 'webflow.com', 'segment.com', 'mixpanel.com', 'amplitude.com',
-  ]);
+  try {
+    const res = await fetch(
+      `https://api.godaddy.com/v1/domains/available?domain=${encodeURIComponent(domain)}&checkType=FAST`,
+      {
+        headers: {
+          Authorization: `sso-key ${apiKey}:${apiSecret}`,
+          Accept: 'application/json',
+        },
+      }
+    );
 
-  if (knownTaken.has(domain)) return 'taken';
+    if (!res.ok) {
+      console.warn(`[check] GoDaddy API error for ${domain}: ${res.status}`);
+      return 'unknown';
+    }
 
-  // Everything else from the generated banks is likely available
-  // In production this should be a real API check
-  return 'available';
+    const data = await res.json();
+    return data.available === true ? 'available' : 'taken';
+  } catch (err) {
+    console.warn(`[check] Network error for ${domain}:`, err);
+    return 'unknown';
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -99,6 +97,7 @@ async function checkBatch(
     );
     results.push(...checked);
     console.log(`[check] ${Math.min(i + concurrency, domains.length)} / ${domains.length} checked`);
+    await new Promise((r) => setTimeout(r, 200)); // stay within GoDaddy rate limits
   }
 
   return results;
