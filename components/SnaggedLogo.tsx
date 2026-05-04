@@ -15,7 +15,7 @@ export default function SnaggedLogo({ className = '', size = 'md' }: Props) {
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
       <img
-        src="/snagged-logo.png"
+        src="/icon.png"
         alt="Snagged"
         width={icon}
         height={icon}
