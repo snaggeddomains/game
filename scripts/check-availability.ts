@@ -20,8 +20,9 @@ dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 import { createClient } from '@supabase/supabase-js';
 
 const RDAP_BASE = 'https://rdap.org/domain';
-const DELAY_MS = 300;
-const CONCURRENCY = 5;
+const DELAY_MS = 200;
+const CONCURRENCY = 10;
+const PAGE_SIZE = 1000;
 
 interface DomainRow {
   id: string;
@@ -81,18 +82,23 @@ async function main() {
     auth: { persistSession: false },
   });
 
-  let query = supabase.from('domains').select('id, domain');
-  if (!checkAll) query = query.eq('availability_status', 'unknown');
-  if (modeArg) query = query.eq('mode', modeArg);
+  // Paginate through all rows — Supabase caps each response at 1000
+  const rows: DomainRow[] = [];
+  let from = 0;
+  while (true) {
+    let query = supabase.from('domains').select('id, domain').range(from, from + PAGE_SIZE - 1);
+    if (!checkAll) query = query.eq('availability_status', 'unknown');
+    if (modeArg) query = query.eq('mode', modeArg);
 
-  const { data: domains, error } = await query;
-
-  if (error) {
-    console.error('[check] Failed to fetch domains:', error.message);
-    process.exit(1);
+    const { data, error } = await query;
+    if (error) {
+      console.error('[check] Failed to fetch domains:', error.message);
+      process.exit(1);
+    }
+    rows.push(...((data ?? []) as DomainRow[]));
+    if (!data || data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
   }
-
-  const rows = (domains ?? []) as DomainRow[];
   console.log(`[check] ${rows.length} domains to verify${checkAll ? ' (--all)' : ''}${modeArg ? ` in mode "${modeArg}"` : ''}`);
 
   if (rows.length === 0) {
