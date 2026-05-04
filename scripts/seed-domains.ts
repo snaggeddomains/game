@@ -39,6 +39,7 @@ interface SeedRecord {
   difficulty: Difficulty;
   availability_status: AvailabilityStatus;
   last_checked_at: string | null;
+  registered_at?: string | null;
   source: string;
 }
 

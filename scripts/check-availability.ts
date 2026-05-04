@@ -2,26 +2,24 @@
  * check-availability.ts
  *
  * Reads generated-domains.json (or a file you specify), checks availability
- * of each domain via a placeholder DNS/WHOIS API, and writes the results to
+ * of each domain via RDAP (free, no API key required), and writes results to
  * checked-domains.json.
+ *
+ * RDAP: 404 = available, 200 = taken. Registration date comes from the
+ * "registration" event in the response body.
  *
  * Usage:
  *   npm run check-availability
  *   npx tsx scripts/check-availability.ts --input generated-domains.json
- *
- * In production, replace the `checkDomain` function with a real API call.
- * Recommended services:
- *   - Domainr API  (https://domainr.com/docs/api)
- *   - GoDaddy Domains API
- *   - Namecheap API
- *   - WhoisXML API
- *
- * Keep your API key in DOMAIN_CHECK_API_KEY env var (server-side only).
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 import type { AvailabilityStatus } from '../lib/types';
+
+const RDAP_BASE = 'https://rdap.org/domain';
+// Pause between requests to stay polite to the RDAP servers
+const DELAY_MS = 300;
 
 interface DomainRecord {
   domain: string;
@@ -32,81 +30,79 @@ interface DomainRecord {
   source: string;
   availability_status?: AvailabilityStatus;
   last_checked_at?: string;
+  registered_at?: string | null;
 }
 
-// ---------------------------------------------------------------------------
-// Placeholder availability checker
-// Replace this function with a real API call in production.
-// ---------------------------------------------------------------------------
-async function checkDomain(domain: string): Promise<AvailabilityStatus> {
-  // TODO: Replace with real domain availability check, e.g.:
-  //
-  // const apiKey = process.env.DOMAIN_CHECK_API_KEY;
-  // const res = await fetch(
-  //   `https://api.domainr.com/v2/status?domain=${domain}&client_id=${apiKey}`
-  // );
-  // const data = await res.json();
-  // const status = data.status?.[0]?.summary;
-  // if (status === 'inactive') return 'available';
-  // if (status === 'active') return 'taken';
-  // return 'unknown';
-
-  // Placeholder: simulate a realistic check result based on well-known heuristics
-  await new Promise((r) => setTimeout(r, 50)); // simulate network latency
-
-  // Well-known brands → taken
-  const knownTaken = new Set([
-    'google.com', 'amazon.com', 'facebook.com', 'netflix.com', 'spotify.com',
-    'twitter.com', 'youtube.com', 'reddit.com', 'instagram.com', 'tiktok.com',
-    'uber.com', 'airbnb.com', 'snapchat.com', 'linkedin.com', 'pinterest.com',
-    'twitch.tv', 'dropbox.com', 'zoom.us', 'slack.com', 'discord.com',
-    'stripe.com', 'notion.com', 'figma.com', 'vercel.com', 'openai.com',
-    'anthropic.com', 'github.com', 'gitlab.com', 'heroku.com', 'cloudflare.com',
-    'roblox.com', 'minecraft.net', 'pokemon.com', 'pbskids.org', 'coolmathgames.com',
-    'tinder.com', 'bumble.com', 'grindr.com', 'onlyfans.com', 'playboy.com',
-    'match.com', 'okcupid.com', 'pof.com', 'zoosk.com', 'hinge.co',
-    'airtable.com', 'webflow.com', 'segment.com', 'mixpanel.com', 'amplitude.com',
-  ]);
-
-  if (knownTaken.has(domain)) return 'taken';
-
-  // Everything else from the generated banks is likely available
-  // In production this should be a real API check
-  return 'available';
+interface RdapResult {
+  status: AvailabilityStatus;
+  registeredAt: string | null;
 }
 
-// ---------------------------------------------------------------------------
-// Rate-limited batch runner
-// ---------------------------------------------------------------------------
+async function checkDomain(domain: string): Promise<RdapResult> {
+  try {
+    const res = await fetch(`${RDAP_BASE}/${domain}`, {
+      headers: { Accept: 'application/rdap+json' },
+    });
+
+    if (res.status === 404) {
+      return { status: 'available', registeredAt: null };
+    }
+
+    if (!res.ok) {
+      // Non-404 errors (5xx, rate limit, etc.) — treat as unknown
+      console.warn(`[check] ${domain} → HTTP ${res.status}, marking unknown`);
+      return { status: 'unknown', registeredAt: null };
+    }
+
+    const data = await res.json();
+    const events: Array<{ eventAction: string; eventDate: string }> = data.events ?? [];
+    const regEvent = events.find((e) => e.eventAction === 'registration');
+    const registeredAt = regEvent?.eventDate ?? null;
+
+    return { status: 'taken', registeredAt };
+  } catch (err) {
+    console.warn(`[check] ${domain} → network error: ${(err as Error).message}`);
+    return { status: 'unknown', registeredAt: null };
+  }
+}
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
 async function checkBatch(
   domains: DomainRecord[],
   concurrency = 5
 ): Promise<DomainRecord[]> {
   const results: DomainRecord[] = [];
-  const now = new Date().toISOString();
 
   for (let i = 0; i < domains.length; i += concurrency) {
     const batch = domains.slice(i, i + concurrency);
+    const now = new Date().toISOString();
+
     const checked = await Promise.all(
       batch.map(async (d) => {
-        const status = await checkDomain(d.domain);
+        const { status, registeredAt } = await checkDomain(d.domain);
         return {
           ...d,
           availability_status: status,
           last_checked_at: now,
+          registered_at: registeredAt,
         };
       })
     );
+
     results.push(...checked);
     console.log(`[check] ${Math.min(i + concurrency, domains.length)} / ${domains.length} checked`);
+
+    if (i + concurrency < domains.length) {
+      await sleep(DELAY_MS);
+    }
   }
 
   return results;
 }
 
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
 async function main() {
   const args = process.argv.slice(2);
   const inputArg = args[args.indexOf('--input') + 1] ?? 'generated-domains.json';
@@ -119,17 +115,18 @@ async function main() {
   }
 
   const domains: DomainRecord[] = JSON.parse(fs.readFileSync(inputPath, 'utf-8'));
-  console.log(`[check] Checking availability for ${domains.length} domains…`);
+  console.log(`[check] Checking ${domains.length} domains via RDAP…`);
 
   const checked = await checkBatch(domains);
 
   const available = checked.filter((d) => d.availability_status === 'available').length;
   const taken = checked.filter((d) => d.availability_status === 'taken').length;
+  const unknown = checked.filter((d) => d.availability_status === 'unknown').length;
 
   const outPath = path.join(process.cwd(), 'checked-domains.json');
   fs.writeFileSync(outPath, JSON.stringify(checked, null, 2));
 
-  console.log(`\n[check] Results: ${available} available, ${taken} taken, ${checked.length - available - taken} unknown`);
+  console.log(`\n[check] Results: ${available} available, ${taken} taken, ${unknown} unknown`);
   console.log(`[check] Wrote to checked-domains.json`);
   console.log('[check] Next step: npm run seed');
 }
