@@ -66,7 +66,8 @@ function sleep(ms: number) {
 async function main() {
   const args = process.argv.slice(2);
   const checkAll = args.includes('--all');
-  const modeArg = args[args.indexOf('--mode') + 1] ?? null;
+  const modeIndex = args.indexOf('--mode');
+  const modeArg = modeIndex !== -1 ? args[modeIndex + 1] : null;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
