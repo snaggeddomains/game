@@ -79,7 +79,6 @@ async function fetchWhoisCreated(domain: string): Promise<string | null> {
     const events: Array<{ eventAction: string; eventDate: string }> = data.events ?? [];
     const reg = events.find((e) => e.eventAction === 'registration');
     if (!reg?.eventDate) return null;
-    // Store as YYYY-MM-DD
     return reg.eventDate.slice(0, 10);
   } catch {
     return null;
@@ -137,6 +136,9 @@ async function main() {
 
     await Promise.all(
       batch.map(async (row) => {
+        // Derive tld from domain string (e.g. "swiftloop.com" -> "com")
+        const tld = row.domain.split('.').pop() ?? '';
+
         const status = await checkDomain(row.domain);
 
         let whoisCreated: string | null = null;
@@ -150,11 +152,12 @@ async function main() {
 
         if (!dryRun) {
           const update: Record<string, unknown> = {
+            tld,
             availability_status: status,
             last_checked_at: now,
           };
           if (status === 'taken') {
-            update.whois_created = whoisCreated; // null if RDAP had no data
+            update.whois_created = whoisCreated;
           }
 
           const { error: updateError } = await supabase
