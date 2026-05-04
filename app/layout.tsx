@@ -4,11 +4,16 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Is it Snagged? — The Domain Name Game',
   description:
-    'Guess whether domain names are already taken or still available. Play in Regular, Kid Friendly, Founder, or Adult mode.',
+    'Guess whether domain names are already taken or still available. Play in Regular, Kid Friendly, or Adult mode.',
+  icons: {
+    icon: '/snagged-logo.png',
+    apple: '/snagged-logo.png',
+  },
   openGraph: {
     title: 'Is it Snagged?',
     description: 'Can you tell which domains are taken? Find out at Snagged.com.',
     siteName: 'Snagged',
+    images: [{ url: '/snagged-logo.png' }],
   },
 };
 
