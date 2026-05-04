@@ -24,6 +24,13 @@ dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 import { createClient } from '@supabase/supabase-js';
 import type { AvailabilityStatus, Difficulty, GameMode } from '../lib/types';
 
+function extractTld(domain: string): string {
+  const lower = domain.toLowerCase();
+  const lastDot = lower.lastIndexOf('.');
+  if (lastDot === -1) return '';
+  return lower.slice(lastDot + 1);
+}
+
 interface SeedRecord {
   domain: string;
   tld: string;
@@ -201,6 +208,12 @@ async function main() {
     records = BUILT_IN_SEEDS;
     console.log(`[seed] Using built-in seed data (${records.length} records)`);
   }
+
+  // Backfill tld for any records that are missing it
+  records = records.map((r) => ({
+    ...r,
+    tld: r.tld || extractTld(r.domain),
+  }));
 
   // Filter out unknown availability unless explicitly seeding them
   const toInsert = records.filter((r) => r.availability_status !== 'unknown');
