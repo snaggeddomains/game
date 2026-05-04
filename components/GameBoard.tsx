@@ -254,7 +254,7 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
               <>
                 <button
                   onClick={handleNext}
-                  className={`btn-coral py-4 text-base ${domain.availability_status === 'available' ? 'col-span-1' : 'col-span-2'}`}
+                  className="btn-coral col-span-2 py-4 text-base"
                   autoFocus
                 >
                   {isLastRound ? 'See Results →' : 'Next Round →'}
@@ -264,9 +264,9 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
                     href={namecheapUrl(domain.domain)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn-navy col-span-1 flex items-center justify-center py-4 text-base text-center"
+                    className="col-span-2 text-center text-xs font-semibold text-brand-navy/50 hover:text-brand-teal transition-colors"
                   >
-                    Register it →
+                    Register {domain.domain} →
                   </a>
                 )}
               </>
