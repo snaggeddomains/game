@@ -1,40 +1,36 @@
 /**
  * check-availability.ts
  *
- * Reads generated-domains.json (or a file you specify), checks availability
- * of each domain via RDAP (free, no API key required), and writes results to
- * checked-domains.json.
+ * Queries Supabase for domains with availability_status = 'unknown', checks
+ * each via RDAP (free, no API key), then updates the records in place.
  *
  * RDAP: 404 = available, 200 = taken. Registration date comes from the
  * "registration" event in the response body.
  *
  * Usage:
  *   npm run check-availability
- *   npx tsx scripts/check-availability.ts --input generated-domains.json
+ *   npm run check-availability -- --all        # re-check every domain
+ *   npm run check-availability -- --mode founder
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
-import type { AvailabilityStatus } from '../lib/types';
+import * as dotenv from 'dotenv';
+
+dotenv.config({ path: path.join(process.cwd(), '.env.local') });
+
+import { createClient } from '@supabase/supabase-js';
 
 const RDAP_BASE = 'https://rdap.org/domain';
-// Pause between requests to stay polite to the RDAP servers
 const DELAY_MS = 300;
+const CONCURRENCY = 5;
 
-interface DomainRecord {
+interface DomainRow {
+  id: string;
   domain: string;
-  tld: string;
-  mode: string;
-  category: string;
-  difficulty: string;
-  source: string;
-  availability_status?: AvailabilityStatus;
-  last_checked_at?: string;
-  registered_at?: string | null;
 }
 
 interface RdapResult {
-  status: AvailabilityStatus;
+  status: 'available' | 'taken' | 'unknown';
   registeredAt: string | null;
 }
 
@@ -49,19 +45,17 @@ async function checkDomain(domain: string): Promise<RdapResult> {
     }
 
     if (!res.ok) {
-      // Non-404 errors (5xx, rate limit, etc.) — treat as unknown
-      console.warn(`[check] ${domain} → HTTP ${res.status}, marking unknown`);
+      console.warn(`  ${domain} → HTTP ${res.status}, marking unknown`);
       return { status: 'unknown', registeredAt: null };
     }
 
     const data = await res.json();
     const events: Array<{ eventAction: string; eventDate: string }> = data.events ?? [];
     const regEvent = events.find((e) => e.eventAction === 'registration');
-    const registeredAt = regEvent?.eventDate ?? null;
 
-    return { status: 'taken', registeredAt };
+    return { status: 'taken', registeredAt: regEvent?.eventDate ?? null };
   } catch (err) {
-    console.warn(`[check] ${domain} → network error: ${(err as Error).message}`);
+    console.warn(`  ${domain} → network error: ${(err as Error).message}`);
     return { status: 'unknown', registeredAt: null };
   }
 }
@@ -70,65 +64,77 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function checkBatch(
-  domains: DomainRecord[],
-  concurrency = 5
-): Promise<DomainRecord[]> {
-  const results: DomainRecord[] = [];
-
-  for (let i = 0; i < domains.length; i += concurrency) {
-    const batch = domains.slice(i, i + concurrency);
-    const now = new Date().toISOString();
-
-    const checked = await Promise.all(
-      batch.map(async (d) => {
-        const { status, registeredAt } = await checkDomain(d.domain);
-        return {
-          ...d,
-          availability_status: status,
-          last_checked_at: now,
-          registered_at: registeredAt,
-        };
-      })
-    );
-
-    results.push(...checked);
-    console.log(`[check] ${Math.min(i + concurrency, domains.length)} / ${domains.length} checked`);
-
-    if (i + concurrency < domains.length) {
-      await sleep(DELAY_MS);
-    }
-  }
-
-  return results;
-}
-
 async function main() {
   const args = process.argv.slice(2);
-  const inputArg = args[args.indexOf('--input') + 1] ?? 'generated-domains.json';
-  const inputPath = path.join(process.cwd(), inputArg);
+  const checkAll = args.includes('--all');
+  const modeArg = args[args.indexOf('--mode') + 1] ?? null;
 
-  if (!fs.existsSync(inputPath)) {
-    console.error(`[check] Input file not found: ${inputPath}`);
-    console.error('[check] Run "npm run generate-domains" first.');
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceKey) {
+    console.error('[check] Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local');
     process.exit(1);
   }
 
-  const domains: DomainRecord[] = JSON.parse(fs.readFileSync(inputPath, 'utf-8'));
-  console.log(`[check] Checking ${domains.length} domains via RDAP…`);
+  const supabase = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false },
+  });
 
-  const checked = await checkBatch(domains);
+  let query = supabase.from('domains').select('id, domain');
+  if (!checkAll) query = query.eq('availability_status', 'unknown');
+  if (modeArg) query = query.eq('mode', modeArg);
 
-  const available = checked.filter((d) => d.availability_status === 'available').length;
-  const taken = checked.filter((d) => d.availability_status === 'taken').length;
-  const unknown = checked.filter((d) => d.availability_status === 'unknown').length;
+  const { data: domains, error } = await query;
 
-  const outPath = path.join(process.cwd(), 'checked-domains.json');
-  fs.writeFileSync(outPath, JSON.stringify(checked, null, 2));
+  if (error) {
+    console.error('[check] Failed to fetch domains:', error.message);
+    process.exit(1);
+  }
 
-  console.log(`\n[check] Results: ${available} available, ${taken} taken, ${unknown} unknown`);
-  console.log(`[check] Wrote to checked-domains.json`);
-  console.log('[check] Next step: npm run seed');
+  const rows = (domains ?? []) as DomainRow[];
+  console.log(`[check] ${rows.length} domains to verify${checkAll ? ' (--all)' : ''}${modeArg ? ` in mode "${modeArg}"` : ''}`);
+
+  if (rows.length === 0) {
+    console.log('[check] Nothing to do. Use --all to re-check already-checked domains.');
+    return;
+  }
+
+  let available = 0, taken = 0, unknown = 0;
+
+  for (let i = 0; i < rows.length; i += CONCURRENCY) {
+    const batch = rows.slice(i, i + CONCURRENCY);
+    const now = new Date().toISOString();
+
+    await Promise.all(
+      batch.map(async (row) => {
+        const { status, registeredAt } = await checkDomain(row.domain);
+
+        const { error: updateError } = await supabase
+          .from('domains')
+          .update({
+            availability_status: status,
+            last_checked_at: now,
+            registered_at: registeredAt,
+          })
+          .eq('id', row.id);
+
+        if (updateError) {
+          console.warn(`  ${row.domain} → update failed: ${updateError.message}`);
+        } else {
+          if (status === 'available') available++;
+          else if (status === 'taken') taken++;
+          else unknown++;
+          console.log(`  ${row.domain} → ${status}${registeredAt ? ` (registered ${registeredAt.slice(0, 10)})` : ''}`);
+        }
+      })
+    );
+
+    if (i + CONCURRENCY < rows.length) await sleep(DELAY_MS);
+  }
+
+  console.log(`\n[check] Done. Available: ${available}, Taken: ${taken}, Unknown: ${unknown}`);
+  console.log('[check] Updated', available + taken, 'records in Supabase.');
 }
 
 main().catch((err) => {
