@@ -50,7 +50,7 @@ export default function ModeSelector({ onStart }: Props) {
             Choose a Mode
           </h2>
 
-          <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="mb-8 grid grid-cols-1 gap-3">
             {(Object.keys(MODE_CONFIG) as GameMode[]).map((mode) => {
               const cfg = MODE_CONFIG[mode];
               const isSelected = selected === mode;
