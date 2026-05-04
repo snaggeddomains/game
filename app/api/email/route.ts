@@ -4,6 +4,27 @@ import type { GameMode } from '@/lib/types';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+async function sendNotification(email: string, mode: GameMode | null, score: number | null) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'game@snagged.com',
+      to: 'rob@snagged.com',
+      subject: `New signup: ${email}`,
+      text: `New email signup on Is it Snagged?\n\nEmail: ${email}\nMode: ${mode ?? 'unknown'}\nScore: ${score ?? 'N/A'}`,
+    }),
+  }).catch(() => {
+    // notification failure is non-blocking
+  });
+}
+
 export async function POST(req: NextRequest) {
   let body: { email: string; mode?: GameMode; score?: number };
   try {
@@ -25,13 +46,14 @@ export async function POST(req: NextRequest) {
   });
 
   if (error) {
-    // Ignore duplicate-email errors gracefully
     if (error.code === '23505') {
       return NextResponse.json({ ok: true, duplicate: true });
     }
     console.error('Error saving email capture:', error);
     return NextResponse.json({ error: 'Failed to save email.' }, { status: 500 });
   }
+
+  await sendNotification(email, mode ?? null, score ?? null);
 
   return NextResponse.json({ ok: true });
 }

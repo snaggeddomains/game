@@ -1,7 +1,7 @@
 'use client';
 
 import type { RoundResult, GameMode } from '@/lib/types';
-import { TOTAL_ROUNDS, POINTS_PER_CORRECT, MODE_CONFIG } from '@/lib/types';
+import { TOTAL_ROUNDS, POINTS_PER_CORRECT, MODE_CONFIG, namecheapUrl } from '@/lib/types';
 import SnaggedLogo from './SnaggedLogo';
 import EmailCapture from './EmailCapture';
 
@@ -100,6 +100,16 @@ export default function ResultsScreen({ rounds, score, maxStreak, mode, onPlayAg
                   >
                     {r.domain.availability_status === 'taken' ? '🔒 Snagged' : '✅ Available'}
                   </span>
+                  {r.domain.availability_status === 'available' && (
+                    <a
+                      href={namecheapUrl(r.domain.domain)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hidden rounded-full bg-brand-navy px-2 py-0.5 text-xs font-semibold text-white hover:bg-brand-teal transition-colors sm:inline"
+                    >
+                      Register →
+                    </a>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   {r.correct ? (

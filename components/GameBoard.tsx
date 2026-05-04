@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Domain, AvailabilityStatus, RoundResult, GameMode } from '@/lib/types';
-import { MODE_CONFIG, TOTAL_ROUNDS, POINTS_PER_CORRECT } from '@/lib/types';
+import { MODE_CONFIG, TOTAL_ROUNDS, POINTS_PER_CORRECT, namecheapUrl } from '@/lib/types';
 import SnaggedLogo from './SnaggedLogo';
 
 interface Props {
@@ -251,13 +251,25 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
                 </button>
               </>
             ) : (
-              <button
-                onClick={handleNext}
-                className="btn-coral col-span-2 py-4 text-base"
-                autoFocus
-              >
-                {isLastRound ? 'See Results →' : 'Next Round →'}
-              </button>
+              <>
+                <button
+                  onClick={handleNext}
+                  className={`btn-coral py-4 text-base ${domain.availability_status === 'available' ? 'col-span-1' : 'col-span-2'}`}
+                  autoFocus
+                >
+                  {isLastRound ? 'See Results →' : 'Next Round →'}
+                </button>
+                {domain.availability_status === 'available' && (
+                  <a
+                    href={namecheapUrl(domain.domain)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-navy col-span-1 flex items-center justify-center py-4 text-base text-center"
+                  >
+                    Register it →
+                  </a>
+                )}
+              </>
             )}
           </div>
 
