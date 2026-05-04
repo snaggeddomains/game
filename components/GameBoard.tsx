@@ -81,6 +81,10 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
   const progress = ((roundIndex + (phase === 'reveal' ? 1 : 0)) / TOTAL_ROUNDS) * 100;
   const streakFires = streak >= 2 ? '🔥'.repeat(Math.min(streak, 5)) : '';
 
+  const whoisYear = domain.whois_created
+    ? new Date(domain.whois_created).getFullYear()
+    : null;
+
   return (
     <div className="flex min-h-screen flex-col bg-game-bg">
       {/* Topbar */}
@@ -188,6 +192,11 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
                     {domain.availability_status === 'taken' ? '🔒 Snagged' : '✅ Available'}
                   </span>
                 </div>
+                {domain.availability_status === 'taken' && whoisYear && (
+                  <div className="mt-1 text-xs text-brand-navy/40">
+                    Registered {whoisYear}
+                  </div>
+                )}
               </div>
             )}
 

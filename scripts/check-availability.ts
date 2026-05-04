@@ -1,20 +1,15 @@
 /**
  * check-availability.ts
  *
- * Pulls all "available" domains from Supabase, verifies each one via the
- * GoDaddy API, and writes the real status back to the database.
+ * Pulls all domains with status 'unknown' (or 'available') from Supabase,
+ * verifies each via GoDaddy, fetches RDAP registration date for taken domains,
+ * and writes results back to the database.
  *
  * Usage:
  *   npm run check-availability
- *   npx tsx scripts/check-availability.ts --mode founder
- *   npx tsx scripts/check-availability.ts --limit 100   # test run
+ *   npx tsx scripts/check-availability.ts --mode regular
+ *   npx tsx scripts/check-availability.ts --limit 50
  *   npx tsx scripts/check-availability.ts --dry-run
- *
- * Requirements:
- *   - NEXT_PUBLIC_SUPABASE_URL in .env.local
- *   - SUPABASE_SERVICE_ROLE_KEY in .env.local
- *   - GODADDY_API_KEY in .env.local
- *   - GODADDY_API_SECRET in .env.local
  */
 
 import * as path from 'path';
@@ -51,16 +46,14 @@ async function checkDomain(domain: string): Promise<'available' | 'taken' | 'unk
       },
     });
 
-    const body = await res.text();
-
     if (res.status === 429) {
-      console.warn(`[check] Rate limited — waiting 2s before retry`);
       await new Promise((r) => setTimeout(r, 2000));
       return checkDomain(domain);
     }
 
+    const body = await res.text();
     if (!res.ok) {
-      console.warn(`[check] GoDaddy ${res.status} for ${domain} — body: ${body || '(empty)'}`);
+      console.warn(`[check] GoDaddy ${res.status} for ${domain}: ${body}`);
       return 'unknown';
     }
 
@@ -69,6 +62,27 @@ async function checkDomain(domain: string): Promise<'available' | 'taken' | 'unk
   } catch (err) {
     console.warn(`[check] Network error for ${domain}:`, err);
     return 'unknown';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// RDAP registration date lookup (for taken domains)
+// ---------------------------------------------------------------------------
+async function fetchWhoisCreated(domain: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const events: Array<{ eventAction: string; eventDate: string }> = data.events ?? [];
+    const reg = events.find((e) => e.eventAction === 'registration');
+    if (!reg?.eventDate) return null;
+    // Store as YYYY-MM-DD
+    return reg.eventDate.slice(0, 10);
+  } catch {
+    return null;
   }
 }
 
@@ -83,18 +97,18 @@ async function main() {
   const limitArg = limitIdx !== -1 ? parseInt(args[limitIdx + 1] ?? '0', 10) : 0;
   const dryRun = args.includes('--dry-run');
   const concurrency = 5;
-  const batchDelay = 250; // ms between batches
+  const batchDelay = 300;
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('[check] Missing Supabase env vars. Check .env.local.');
+    console.error('[check] Missing Supabase env vars.');
     process.exit(1);
   }
 
-  // Fetch domains marked available (the ones we generated but haven't verified)
+  // Check unknown + available (skip already-confirmed taken)
   let query = supabase
     .from('domains')
     .select('id, domain, mode')
-    .eq('availability_status', 'available');
+    .in('availability_status', ['unknown', 'available']);
 
   if (modeArg) query = query.eq('mode', modeArg);
   if (limitArg > 0) query = query.limit(limitArg);
@@ -106,7 +120,11 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`[check] ${domains.length} domains to verify${modeArg ? ` (mode: ${modeArg})` : ''}${dryRun ? ' [DRY RUN]' : ''}`);
+  console.log(
+    `[check] ${domains.length} domains to verify` +
+    (modeArg ? ` (mode: ${modeArg})` : '') +
+    (dryRun ? ' [DRY RUN]' : '')
+  );
 
   let available = 0;
   let taken = 0;
@@ -121,27 +139,45 @@ async function main() {
       batch.map(async (row) => {
         const status = await checkDomain(row.domain);
 
+        let whoisCreated: string | null = null;
+        if (status === 'taken') {
+          whoisCreated = await fetchWhoisCreated(row.domain);
+        }
+
         if (status === 'available') available++;
         else if (status === 'taken') taken++;
         else unknown++;
 
         if (!dryRun) {
+          const update: Record<string, unknown> = {
+            availability_status: status,
+            last_checked_at: now,
+          };
+          if (status === 'taken') {
+            update.whois_created = whoisCreated; // null if RDAP had no data
+          }
+
           const { error: updateError } = await supabase
             .from('domains')
-            .update({ availability_status: status, last_checked_at: now })
+            .update(update)
             .eq('id', row.id);
 
           if (updateError) {
             console.warn(`[check] Failed to update ${row.domain}:`, updateError.message);
           } else {
             updated++;
+            if (status === 'taken' && whoisCreated) {
+              console.log(`  ✓ ${row.domain} — taken (registered ${whoisCreated})`);
+            }
           }
         }
       })
     );
 
     const done = Math.min(i + concurrency, domains.length);
-    console.log(`[check] ${done} / ${domains.length} — available: ${available}, taken: ${taken}, unknown: ${unknown}`);
+    process.stdout.write(
+      `\r[check] ${done} / ${domains.length} — available: ${available}, taken: ${taken}, unknown: ${unknown}   `
+    );
     await new Promise((r) => setTimeout(r, batchDelay));
   }
 
