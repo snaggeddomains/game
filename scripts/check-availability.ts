@@ -15,7 +15,6 @@
 
 import * as path from 'path';
 import * as dotenv from 'dotenv';
-
 dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 
 import { createClient } from '@supabase/supabase-js';
