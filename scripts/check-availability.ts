@@ -20,9 +20,10 @@ dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 import { createClient } from '@supabase/supabase-js';
 
 const RDAP_BASE = 'https://rdap.org/domain';
-const DELAY_MS = 200;
-const CONCURRENCY = 10;
+const DELAY_MS = 500;
+const CONCURRENCY = 3;
 const PAGE_SIZE = 1000;
+const MAX_RETRIES = 4;
 
 interface DomainRow {
   id: string;
@@ -35,29 +36,42 @@ interface RdapResult {
 }
 
 async function checkDomain(domain: string): Promise<RdapResult> {
-  try {
-    const res = await fetch(`${RDAP_BASE}/${domain}`, {
-      headers: { Accept: 'application/rdap+json' },
-    });
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(`${RDAP_BASE}/${domain}`, {
+        headers: { Accept: 'application/rdap+json' },
+      });
 
-    if (res.status === 404) {
-      return { status: 'available', registeredAt: null };
+      if (res.status === 404) {
+        return { status: 'available', registeredAt: null };
+      }
+
+      if (res.status === 429) {
+        const wait = 2000 * Math.pow(2, attempt);
+        console.warn(`  ${domain} → rate limited, retrying in ${wait / 1000}s…`);
+        await sleep(wait);
+        continue;
+      }
+
+      if (!res.ok) {
+        console.warn(`  ${domain} → HTTP ${res.status}, marking unknown`);
+        return { status: 'unknown', registeredAt: null };
+      }
+
+      const data = await res.json();
+      const events: Array<{ eventAction: string; eventDate: string }> = data.events ?? [];
+      const regEvent = events.find((e) => e.eventAction === 'registration');
+
+      return { status: 'taken', registeredAt: regEvent?.eventDate ?? null };
+    } catch (err) {
+      if (attempt === MAX_RETRIES) {
+        console.warn(`  ${domain} → failed after ${MAX_RETRIES} retries: ${(err as Error).message}`);
+        return { status: 'unknown', registeredAt: null };
+      }
+      await sleep(1000 * (attempt + 1));
     }
-
-    if (!res.ok) {
-      console.warn(`  ${domain} → HTTP ${res.status}, marking unknown`);
-      return { status: 'unknown', registeredAt: null };
-    }
-
-    const data = await res.json();
-    const events: Array<{ eventAction: string; eventDate: string }> = data.events ?? [];
-    const regEvent = events.find((e) => e.eventAction === 'registration');
-
-    return { status: 'taken', registeredAt: regEvent?.eventDate ?? null };
-  } catch (err) {
-    console.warn(`  ${domain} → network error: ${(err as Error).message}`);
-    return { status: 'unknown', registeredAt: null };
   }
+  return { status: 'unknown', registeredAt: null };
 }
 
 function sleep(ms: number) {
