@@ -6,23 +6,32 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 async function sendNotification(email: string, mode: GameMode | null, score: number | null) {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return;
+  if (!apiKey) {
+    console.error('Resend: RESEND_API_KEY not set');
+    return;
+  }
 
-  await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: 'game@snagged.com',
-      to: 'rob@snagged.com',
-      subject: `New signup: ${email}`,
-      text: `New email signup on Is it Snagged?\n\nEmail: ${email}\nMode: ${mode ?? 'unknown'}\nScore: ${score ?? 'N/A'}`,
-    }),
-  }).catch(() => {
-    // notification failure is non-blocking
-  });
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'game@snagged.com',
+        to: 'rob@snagged.com',
+        subject: `New signup: ${email}`,
+        text: `New email signup on Is it Snagged?\n\nEmail: ${email}\nMode: ${mode ?? 'unknown'}\nScore: ${score ?? 'N/A'}`,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`Resend error ${res.status}:`, body);
+    }
+  } catch (err) {
+    console.error('Resend fetch failed:', err);
+  }
 }
 
 export async function POST(req: NextRequest) {

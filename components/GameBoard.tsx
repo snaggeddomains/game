@@ -54,7 +54,6 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
 
   const handleNext = useCallback(() => {
     if (isLastRound) {
-      // Use functional updater so we get the latest rounds without a stale closure
       setRounds((latest) => {
         onComplete(latest, score, maxStreak);
         return latest;
@@ -108,7 +107,7 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
         </div>
       </header>
 
-      {/* Progress bar (teal water fill) */}
+      {/* Progress bar */}
       <div className="h-1.5 bg-game-border">
         <div
           className="h-full bg-brand-teal transition-all duration-500"
@@ -251,25 +250,25 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
                 </button>
               </>
             ) : (
-              <>
+              <div className="col-span-2 flex flex-col gap-2">
                 <button
                   onClick={handleNext}
-                  className="btn-coral col-span-2 py-4 text-base"
+                  className="btn-coral w-full py-4 text-base"
                   autoFocus
                 >
-                  {isLastRound ? 'See Results →' : 'Next Round →'}
+                  {isLastRound ? 'See Results →' : 'Next Domain →'}
                 </button>
                 {domain.availability_status === 'available' && (
                   <a
                     href={namecheapUrl(domain.domain)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="col-span-2 text-center text-xs font-semibold text-brand-navy/50 hover:text-brand-teal transition-colors"
+                    className="w-full rounded-xl border border-brand-teal/40 py-2.5 text-center text-sm font-semibold text-brand-teal transition-colors hover:border-brand-teal hover:bg-brand-teal/5"
                   >
-                    Register {domain.domain} →
+                    Register It →
                   </a>
                 )}
-              </>
+              </div>
             )}
           </div>
 
