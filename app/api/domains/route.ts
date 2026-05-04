@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const mode = searchParams.get('mode') as GameMode | null;
 
-  const validModes: GameMode[] = ['regular', 'kid_friendly', 'founder', 'adult'];
+  const validModes: GameMode[] = ['regular', 'kid_friendly', 'adult'];
   if (!mode || !validModes.includes(mode)) {
     return NextResponse.json({ error: 'Invalid or missing mode parameter.' }, { status: 400 });
   }
