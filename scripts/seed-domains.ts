@@ -27,10 +27,8 @@ interface SeedRecord {
   domain: string;
   tld: string;
   mode: GameMode;
-  category: string | null;
   availability_status: AvailabilityStatus;
   last_checked_at: string | null;
-  source: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -130,10 +128,8 @@ function crossJoin(
         domain: `${a}${b}.${tld}`,
         tld,
         mode,
-        category: categories[i % categories.length],
         availability_status: status,
         last_checked_at: null,
-        source: 'seed',
       });
       i++;
     }
@@ -149,7 +145,6 @@ function taken(
   domain: string,
   tld: string,
   mode: GameMode,
-  category: string,
 ): SeedRecord {
 }
 

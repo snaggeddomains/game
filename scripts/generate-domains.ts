@@ -21,8 +21,6 @@ interface GeneratedDomain {
   domain: string;
   tld: string;
   mode: GameMode;
-  category: string;
-  source: 'generated';
 }
 
 // ---------------------------------------------------------------------------
@@ -30,7 +28,7 @@ interface GeneratedDomain {
 // Replace generateForMode() with a real LLM call for production use.
 // ---------------------------------------------------------------------------
 
-const DOMAIN_BANKS: Record<GameMode, Array<Omit<GeneratedDomain, 'mode' | 'source'>>> = {
+const DOMAIN_BANKS: Record<GameMode, Array<Omit<GeneratedDomain, 'mode'>>> = {
   regular: [
   ],
   kid_friendly: [
@@ -55,7 +53,6 @@ async function generateForMode(
   return shuffled.slice(0, Math.min(count, shuffled.length)).map((d) => ({
     ...d,
     mode,
-    source: 'generated' as const,
   }));
 }
 

@@ -212,11 +212,6 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
               >
                 {domain.domain}
               </p>
-              {domain.category && (
-                <span className="mt-5 rounded-full bg-game-bg px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-navy/40">
-                  {domain.category}
-                </span>
-              )}
             </div>
           </div>
 

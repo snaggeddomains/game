@@ -7,11 +7,9 @@ export interface Domain {
   domain: string;
   tld: string;
   mode: GameMode;
-  category: string | null;
   availability_status: AvailabilityStatus;
   registered_at: string | null;
   last_checked_at: string | null;
-  source: string | null;
   times_shown: number;
   correct_guess_rate: number | null;
   created_at: string;
