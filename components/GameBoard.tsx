@@ -115,7 +115,15 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
     <div className="flex min-h-screen flex-col bg-game-bg">
       {/* Topbar */}
       <header className="flex items-center justify-between border-b border-game-border bg-white px-4 py-3 sm:px-6">
-        <SnaggedLogo size="sm" />
+        <div className="flex items-center gap-4">
+          <SnaggedLogo size="sm" />
+          <a
+            href="https://www.snagged.com"
+            className="hidden text-xs font-semibold text-brand-navy/40 hover:text-brand-navy/70 transition-colors sm:block"
+          >
+            ← Snagged.com
+          </a>
+        </div>
         <div className="flex items-center gap-3 sm:gap-5">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-semibold uppercase tracking-wider text-brand-navy/40">Mode</span>

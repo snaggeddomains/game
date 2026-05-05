@@ -32,6 +32,14 @@ export default function ModeSelector({ onStart }: Props) {
     <div className="flex min-h-screen flex-col">
       {/* Hero */}
       <header className="bg-brand-salmon px-4 pb-0 pt-10 text-center">
+        <div className="mb-6 text-center">
+          <a
+            href="https://www.snagged.com"
+            className="text-xs font-semibold text-brand-navy/40 hover:text-brand-navy/70 transition-colors"
+          >
+            ← Back to Snagged.com
+          </a>
+        </div>
         <SnaggedLogo size="md" className="mb-4 justify-center" />
         <h1
           className="px-4 text-5xl uppercase leading-none tracking-tight text-brand-navy sm:text-7xl"
