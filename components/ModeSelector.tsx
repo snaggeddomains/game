@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import type { GameMode } from '@/lib/types';
 import { MODE_CONFIG } from '@/lib/types';
 import SnaggedLogo from './SnaggedLogo';
@@ -16,8 +17,22 @@ const FLOATING_DOMAINS = [
   'CrimsonLab.com', 'IronPath.net',
 ];
 
+interface LeaderboardPlayer {
+  rank: number;
+  display_name: string;
+  avg_accuracy: string;
+}
+
 export default function ModeSelector({ onStart }: Props) {
   const [selected, setSelected] = useState<GameMode | null>(null);
+  const [topPlayers, setTopPlayers] = useState<LeaderboardPlayer[]>([]);
+
+  useEffect(() => {
+    fetch('/api/leaderboard')
+      .then((r) => r.json())
+      .then((data) => setTopPlayers((data.players ?? []).slice(0, 3)))
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -148,6 +163,46 @@ export default function ModeSelector({ onStart }: Props) {
           <p className="mt-5 text-center text-xs text-brand-navy/40">
             Adult mode contains mature language and themes. 18+ only.
           </p>
+
+          {/* Leaderboard preview */}
+          <div className="mt-8">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-brand-navy/50">
+                🏆 Leaderboard
+              </h2>
+              <Link
+                href="/leaderboard"
+                className="text-xs font-semibold text-brand-teal hover:underline"
+              >
+                View all →
+              </Link>
+            </div>
+
+            {topPlayers.length === 0 ? (
+              <div className="rounded-2xl border-2 border-game-border bg-white px-5 py-4 text-center text-sm text-brand-navy/40">
+                No players yet — be the first on the board!
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-2xl border-2 border-game-border bg-white">
+                {topPlayers.map((p, i) => (
+                  <div
+                    key={p.rank}
+                    className={`flex items-center justify-between px-4 py-3 text-sm ${
+                      i < topPlayers.length - 1 ? 'border-b border-game-border' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="w-6 text-center font-black text-brand-navy/30">
+                        {p.rank <= 3 ? ['🥇', '🥈', '🥉'][p.rank - 1] : p.rank}
+                      </span>
+                      <span className="font-bold text-brand-navy">{p.display_name}</span>
+                    </div>
+                    <span className="font-black tabular-nums text-brand-teal">{p.avg_accuracy}%</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>

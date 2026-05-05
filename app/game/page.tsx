@@ -91,6 +91,7 @@ export default function GamePage() {
 
       // Fire-and-forget analytics
       try {
+        const playerId = localStorage.getItem('lbPlayerId') ?? null;
         await fetch('/api/game-result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -99,6 +100,7 @@ export default function GamePage() {
             score: finalScore,
             max_streak: finalMaxStreak,
             rounds: completedRounds,
+            player_id: playerId,
           }),
         });
       } catch {

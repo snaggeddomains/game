@@ -4,6 +4,7 @@ import type { RoundResult, GameMode } from '@/lib/types';
 import { TOTAL_ROUNDS, POINTS_PER_CORRECT, MODE_CONFIG, namecheapUrl } from '@/lib/types';
 import SnaggedLogo from './SnaggedLogo';
 import EmailCapture from './EmailCapture';
+import LeaderboardPrompt from './LeaderboardPrompt';
 
 interface Props {
   rounds: RoundResult[];
@@ -125,6 +126,9 @@ export default function ResultsScreen({ rounds, score, maxStreak, mode, onPlayAg
             ))}
           </div>
         </div>
+
+        {/* Leaderboard prompt (shown once to new players) */}
+        <LeaderboardPrompt />
 
         {/* Email capture */}
         <div className="mb-6">

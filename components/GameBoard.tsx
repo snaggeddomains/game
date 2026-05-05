@@ -13,6 +13,8 @@ interface Props {
 
 type Phase = 'guessing' | 'reveal';
 
+const TIMER_SECONDS = 10;
+
 export default function GameBoard({ domains, mode, onComplete }: Props) {
   const [roundIndex, setRoundIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>('guessing');
@@ -22,6 +24,7 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
   const [maxStreak, setMaxStreak] = useState(0);
   const [playerGuess, setPlayerGuess] = useState<AvailabilityStatus | null>(null);
   const [cardKey, setCardKey] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
 
   const domain = domains[roundIndex];
   const isLastRound = roundIndex === TOTAL_ROUNDS - 1;
@@ -29,6 +32,7 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
 
   useEffect(() => {
     setCardKey((k) => k + 1);
+    setTimeLeft(TIMER_SECONDS);
   }, [roundIndex]);
 
   const handleGuess = useCallback(
@@ -52,6 +56,17 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
     [phase, domain, streak, maxStreak]
   );
 
+  const handleTimeout = useCallback(() => {
+    if (phase !== 'guessing') return;
+    setPlayerGuess(null);
+    setPhase('reveal');
+    setStreak(0);
+    setRounds((prev) => [
+      ...prev,
+      { domain, player_guess: 'unknown', correct: false, points: 0 },
+    ]);
+  }, [phase, domain]);
+
   const handleNext = useCallback(() => {
     if (isLastRound) {
       setRounds((latest) => {
@@ -64,6 +79,17 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
     setPhase('guessing');
     setPlayerGuess(null);
   }, [isLastRound, score, maxStreak, onComplete]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (phase !== 'guessing') return;
+    if (timeLeft <= 0) {
+      handleTimeout();
+      return;
+    }
+    const t = setTimeout(() => setTimeLeft((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [phase, timeLeft, handleTimeout]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -129,12 +155,32 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
               <span className="font-black text-brand-navy">{roundIndex + 1}</span>
               <span className="text-brand-navy/30"> / {TOTAL_ROUNDS}</span>
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {streakFires && (
                 <span className="flex items-center gap-1 text-sm sm:hidden">
                   <span className="text-brand-navy/40 text-xs">Streak</span>
                   <span>{streakFires}</span>
                 </span>
+              )}
+              {phase === 'guessing' && (
+                <svg width="36" height="36" viewBox="0 0 36 36" aria-label={`${timeLeft} seconds remaining`}>
+                  <circle cx="18" cy="18" r="15" fill="none" stroke="#E5E7EB" strokeWidth="3" />
+                  <circle
+                    cx="18" cy="18" r="15"
+                    fill="none"
+                    stroke={timeLeft <= 3 ? '#F43F5E' : '#7EC8D8'}
+                    strokeWidth="3"
+                    strokeDasharray={`${2 * Math.PI * 15}`}
+                    strokeDashoffset={`${2 * Math.PI * 15 * (1 - timeLeft / TIMER_SECONDS)}`}
+                    strokeLinecap="round"
+                    transform="rotate(-90 18 18)"
+                    style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.3s' }}
+                  />
+                  <text x="18" y="23" textAnchor="middle" fontSize="12" fontWeight="bold"
+                    fill={timeLeft <= 3 ? '#F43F5E' : '#1B3553'}>
+                    {timeLeft}
+                  </text>
+                </svg>
               )}
             </div>
           </div>
@@ -165,7 +211,7 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
                     correct ? 'text-brand-teal' : 'text-red-600'
                   }`}
                 >
-                  {correct ? `+${POINTS_PER_CORRECT} pts!` : 'Not quite!'}
+                  {correct ? `+${POINTS_PER_CORRECT} pts!` : playerGuess === null ? 'Time\'s up!' : 'Not quite!'}
                 </div>
                 <div className="mt-1 text-sm font-medium text-brand-navy/60">
                   {domain.availability_status === 'available' ? 'It is' : 'It was'}{' '}
