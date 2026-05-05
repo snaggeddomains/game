@@ -18,23 +18,31 @@ export async function GET(req: NextRequest) {
   // Fetch taken and available separately so we always guarantee a balanced mix.
   // Random offset into the full pool ensures variety across sessions.
   async function fetchPool(status: 'taken' | 'available', need: number) {
-    const { count } = await supabase
+    let countQ = supabase
       .from('domains')
       .select('*', { count: 'exact', head: true })
       .eq('mode', mode!)
       .eq('availability_status', status);
+
+    if (status === 'taken') countQ = countQ.not('registered_at', 'is', null);
+
+    const { count } = await countQ;
 
     const total = count ?? 0;
     const fetchSize = Math.min(need * 4, total);
     const maxOffset = Math.max(0, total - fetchSize);
     const offset = Math.floor(Math.random() * maxOffset);
 
-    const { data, error } = await supabase
+    let q = supabase
       .from('domains')
       .select('*')
       .eq('mode', mode!)
-      .eq('availability_status', status)
-      .range(offset, offset + fetchSize - 1);
+      .eq('availability_status', status);
+
+    // Taken domains must have a registration date
+    if (status === 'taken') q = q.not('registered_at', 'is', null);
+
+    const { data, error } = await q.range(offset, offset + fetchSize - 1);
 
     if (error) throw new Error(error.message);
     return data ?? [];
