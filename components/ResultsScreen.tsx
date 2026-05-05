@@ -34,6 +34,14 @@ export default function ResultsScreen({ rounds, score, maxStreak, mode, onPlayAg
     <div className="flex min-h-screen flex-col bg-game-bg">
       {/* Result hero — salmon header */}
       <div className="relative bg-brand-salmon pb-16 pt-10 text-center">
+        <div className="mb-4 text-center">
+          <a
+            href="https://www.snagged.com"
+            className="text-xs font-semibold text-brand-navy/40 hover:text-brand-navy/70 transition-colors"
+          >
+            ← Back to Snagged.com
+          </a>
+        </div>
         <SnaggedLogo size="sm" className="mb-6 justify-center" />
 
         <div className="mb-2 text-6xl">{rating.emoji}</div>
