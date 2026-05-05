@@ -1,5 +1,4 @@
 export type GameMode = 'regular' | 'kid_friendly' | 'adult';
-export type Difficulty = 'easy' | 'medium' | 'hard';
 export type AvailabilityStatus = 'available' | 'taken' | 'unknown';
 export type GamePhase = 'mode-select' | 'loading' | 'playing' | 'reveal' | 'complete';
 
@@ -9,7 +8,6 @@ export interface Domain {
   tld: string;
   mode: GameMode;
   category: string | null;
-  difficulty: Difficulty;
   availability_status: AvailabilityStatus;
   registered_at: string | null;
   last_checked_at: string | null;

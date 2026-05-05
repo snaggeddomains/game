@@ -136,19 +136,6 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
                   <span>{streakFires}</span>
                 </span>
               )}
-              {domain.difficulty && (
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    domain.difficulty === 'easy'
-                      ? 'bg-slate-100 text-slate-500'
-                      : domain.difficulty === 'hard'
-                      ? 'bg-red-100 text-red-600'
-                      : 'bg-amber-100 text-amber-700'
-                  }`}
-                >
-                  {domain.difficulty}
-                </span>
-              )}
             </div>
           </div>
 
