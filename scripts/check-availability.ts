@@ -95,6 +95,7 @@ async function main() {
   const limitIdx = args.indexOf('--limit');
   const limitArg = limitIdx !== -1 ? parseInt(args[limitIdx + 1] ?? '0', 10) : 0;
   const dryRun = args.includes('--dry-run');
+  const fillDates = args.includes('--fill-dates'); // backfill whois_created for taken domains missing it
   const concurrency = 5;
   const batchDelay = 300;
 
@@ -103,11 +104,17 @@ async function main() {
     process.exit(1);
   }
 
-  // Check unknown + available (skip already-confirmed taken)
   let query = supabase
     .from('domains')
-    .select('id, domain, mode')
-    .in('availability_status', ['unknown', 'available']);
+    .select('id, domain, mode');
+
+  if (fillDates) {
+    // Only re-check taken domains that are missing a registration date
+    query = query.eq('availability_status', 'taken').is('whois_created', null);
+  } else {
+    // Default: check unknown + available
+    query = query.in('availability_status', ['unknown', 'available']);
+  }
 
   if (modeArg) query = query.eq('mode', modeArg);
   if (limitArg > 0) query = query.limit(limitArg);
@@ -136,19 +143,23 @@ async function main() {
 
     await Promise.all(
       batch.map(async (row) => {
-        // Derive tld from domain string (e.g. "swiftloop.com" -> "com")
         const tld = row.domain.split('.').pop() ?? '';
 
-        const status = await checkDomain(row.domain);
-
+        let status: 'available' | 'taken' | 'unknown';
         let whoisCreated: string | null = null;
-        if (status === 'taken') {
-          whoisCreated = await fetchWhoisCreated(row.domain);
-        }
 
-        if (status === 'available') available++;
-        else if (status === 'taken') taken++;
-        else unknown++;
+        if (fillDates) {
+          // Domain is already confirmed taken — just fetch the missing date
+          status = 'taken';
+          whoisCreated = await fetchWhoisCreated(row.domain);
+          taken++;
+        } else {
+          status = await checkDomain(row.domain);
+          if (status === 'taken') whoisCreated = await fetchWhoisCreated(row.domain);
+          if (status === 'available') available++;
+          else if (status === 'taken') taken++;
+          else unknown++;
+        }
 
         if (!dryRun) {
           const update: Record<string, unknown> = {
