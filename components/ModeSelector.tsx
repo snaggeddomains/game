@@ -25,7 +25,7 @@ export default function ModeSelector({ onStart }: Props) {
           Is it Snagged?
         </h1>
         <p className="mx-auto mt-4 max-w-sm px-4 text-base font-medium text-brand-navy/70 sm:text-lg">
-          10 domains. Guess which ones are registered.
+          10 domains. Which ones are taken?
           <br />
           How well do you know the internet?
         </p>
