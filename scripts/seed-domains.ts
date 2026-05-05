@@ -388,7 +388,7 @@ async function main() {
   for (let i = 0; i < toInsert.length; i += BATCH) {
     const batch = toInsert.slice(i, i + BATCH);
     const { error } = await supabase
-      .from('domains')
+      .from('game_domains')
       .upsert(batch, { onConflict: 'domain,mode', ignoreDuplicates: false });
 
     if (error) {

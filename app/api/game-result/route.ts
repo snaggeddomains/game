@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   // Upsert in parallel (best-effort; don't fail the response on analytics errors)
   await Promise.allSettled(
     updates.map(({ id, ...rest }) =>
-      supabase.from('domains').update(rest).eq('id', id)
+      supabase.from('game_domains').update(rest).eq('id', id)
     )
   );
 

@@ -105,7 +105,7 @@ async function main() {
   }
 
   let query = supabase
-    .from('domains')
+    .from('game_domains')
     .select('id, domain, mode');
 
   if (fillDates) {
@@ -172,7 +172,7 @@ async function main() {
           }
 
           const { error: updateError } = await supabase
-            .from('domains')
+            .from('game_domains')
             .update(update)
             .eq('id', row.id);
 

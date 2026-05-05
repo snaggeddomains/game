@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   // Random offset into the full pool ensures variety across sessions.
   async function fetchPool(status: 'taken' | 'available', need: number) {
     let countQ = supabase
-      .from('domains')
+      .from('game_domains')
       .select('*', { count: 'exact', head: true })
       .eq('mode', mode!)
       .eq('availability_status', status);
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     const offset = Math.floor(Math.random() * maxOffset);
 
     let q = supabase
-      .from('domains')
+      .from('game_domains')
       .select('*')
       .eq('mode', mode!)
       .eq('availability_status', status);
