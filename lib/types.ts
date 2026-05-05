@@ -11,7 +11,7 @@ export interface Domain {
   category: string | null;
   difficulty: Difficulty;
   availability_status: AvailabilityStatus;
-  whois_created: string | null;
+  registered_at: string | null;
   last_checked_at: string | null;
   source: string | null;
   times_shown: number;

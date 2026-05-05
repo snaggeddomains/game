@@ -95,7 +95,7 @@ async function main() {
   const limitIdx = args.indexOf('--limit');
   const limitArg = limitIdx !== -1 ? parseInt(args[limitIdx + 1] ?? '0', 10) : 0;
   const dryRun = args.includes('--dry-run');
-  const fillDates = args.includes('--fill-dates'); // backfill whois_created for taken domains missing it
+  const fillDates = args.includes('--fill-dates'); // backfill registered_at for taken domains missing it
   const concurrency = 5;
   const batchDelay = 300;
 
@@ -110,7 +110,7 @@ async function main() {
 
   if (fillDates) {
     // Only re-check taken domains that are missing a registration date
-    query = query.eq('availability_status', 'taken').is('whois_created', null);
+    query = query.eq('availability_status', 'taken').is('registered_at', null);
   } else {
     // Default: check unknown + available
     query = query.in('availability_status', ['unknown', 'available']);
@@ -168,7 +168,7 @@ async function main() {
             last_checked_at: now,
           };
           if (status === 'taken') {
-            update.whois_created = whoisCreated;
+            update.registered_at = whoisCreated;
           }
 
           const { error: updateError } = await supabase

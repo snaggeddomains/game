@@ -81,8 +81,8 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
   const progress = ((roundIndex + (phase === 'reveal' ? 1 : 0)) / TOTAL_ROUNDS) * 100;
   const streakFires = streak >= 2 ? '🔥'.repeat(Math.min(streak, 5)) : '';
 
-  const whoisDate = domain.whois_created
-    ? new Date(domain.whois_created).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+  const whoisDate = domain.registered_at
+    ? new Date(domain.registered_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
     : null;
 
   return (
