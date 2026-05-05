@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createServiceClient } from '@/lib/supabase';
 import type { GameMode, RoundResult } from '@/lib/types';
 
 interface GameResultPayload {
@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
   if (!mode || typeof score !== 'number' || !Array.isArray(rounds)) {
     return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
   }
+
+  const supabase = createServiceClient();
 
   const correctCount = rounds.filter((r) => r.correct).length;
   const accuracy = rounds.length > 0 ? (correctCount / rounds.length) * 100 : 0;
