@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import type { GameMode } from '@/lib/types';
 import { MODE_CONFIG } from '@/lib/types';
@@ -11,12 +10,6 @@ import LeaderboardProgress from './LeaderboardProgress';
 interface Props {
   onStart: (mode: GameMode) => void;
 }
-
-const FLOATING_DOMAINS = [
-  'BlueRocket.io', 'NeonPulse.co', 'FrostByte.ai', 'VaultKey.com',
-  'PixelDrift.net', 'LunarBase.io', 'SwiftEdge.co', 'GoldRun.ai',
-  'CrimsonLab.com', 'IronPath.net',
-];
 
 interface LeaderboardPlayer {
   rank: number;
@@ -38,69 +31,25 @@ export default function ModeSelector({ onStart }: Props) {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Hero */}
-      <header className="relative overflow-hidden bg-brand-salmon pb-0 pt-10 text-center">
-        {/* Clouds */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-around opacity-80">
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className="mt-4 rounded-full bg-white/90"
-              style={{
-                width: `${90 + i * 20}px`,
-                height: `${36 + i * 8}px`,
-                marginTop: `${8 + (i % 3) * 16}px`,
-                filter: 'blur(2px)',
-              }}
-            />
-          ))}
-        </div>
+      <header className="bg-brand-salmon px-4 pb-0 pt-10 text-center">
+        <SnaggedLogo size="md" className="mb-4 justify-center" />
+        <h1
+          className="px-4 text-5xl uppercase leading-none tracking-tight text-brand-navy sm:text-7xl"
+          style={{ fontFamily: "'Anton', Impact, sans-serif" }}
+        >
+          Is it Snagged?
+        </h1>
+        <p className="mx-auto mt-4 max-w-sm text-base font-medium text-brand-navy/70 sm:text-lg">
+          10 domains. Guess which ones are registered.
+          <br />
+          How well do you know the internet?
+        </p>
 
-        <div className="relative z-10 px-4">
-          <SnaggedLogo size="md" className="mb-4 justify-center" />
-          <h1
-            className="px-4 text-5xl uppercase leading-none tracking-tight text-brand-navy sm:text-7xl"
-            style={{ fontFamily: "'Anton', Impact, sans-serif" }}
-          >
-            Is it Snagged?
-          </h1>
-          <p className="mx-auto mt-4 max-w-sm text-base font-medium text-brand-navy/70 sm:text-lg">
-            10 domains. Which ones are taken?
-            <br />
-            How well do you know the internet?
-          </p>
-        </div>
-
-        {/* Fisherman character */}
-        <div className="pointer-events-none absolute bottom-0 right-0 z-20 hidden sm:block" style={{ width: 180 }}>
-          <Image
-            src="/fisherman.png"
-            alt="Snagged fisherman mascot"
-            width={180}
-            height={220}
-            className="object-contain object-bottom"
-            priority
-          />
-        </div>
-
-        {/* Water section */}
-        <div className="relative mt-10" style={{ background: '#0F3D5C' }}>
-          {/* Wave cap */}
-          <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ display: 'block', marginTop: -1 }}>
-            <path d="M0 30 Q180 0 360 30 Q540 60 720 30 Q900 0 1080 30 Q1260 60 1440 30 L1440 60 L0 60 Z" fill="#0F3D5C" />
+        {/* Wave divider */}
+        <div className="relative mt-10 -mb-px">
+          <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="block h-10 w-full">
+            <path d="M0 30 Q180 0 360 30 Q540 60 720 30 Q900 0 1080 30 Q1260 60 1440 30 L1440 60 L0 60 Z" fill="#FAF3EC" />
           </svg>
-
-          {/* Floating domain pills */}
-          <div className="flex flex-wrap justify-center gap-3 px-6 py-6">
-            {FLOATING_DOMAINS.map((d) => (
-              <span
-                key={d}
-                className="rounded-full px-4 py-1.5 text-sm font-semibold"
-                style={{ background: '#1A5276', color: '#7EC8D8' }}
-              >
-                {d}
-              </span>
-            ))}
-          </div>
         </div>
       </header>
 
@@ -174,10 +123,7 @@ export default function ModeSelector({ onStart }: Props) {
               <h2 className="text-sm font-bold uppercase tracking-widest text-brand-navy/50">
                 🏆 Leaderboard
               </h2>
-              <Link
-                href="/leaderboard"
-                className="text-xs font-semibold text-brand-teal hover:underline"
-              >
+              <Link href="/leaderboard" className="text-xs font-semibold text-brand-teal hover:underline">
                 View all →
               </Link>
             </div>
