@@ -181,7 +181,7 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
                   {correct ? `+${POINTS_PER_CORRECT} pts!` : 'Not quite!'}
                 </div>
                 <div className="mt-1 text-sm font-medium text-brand-navy/60">
-                  It was{' '}
+                  {domain.availability_status === 'available' ? 'It is' : 'It was'}{' '}
                   <span
                     className={
                       domain.availability_status === 'taken'
