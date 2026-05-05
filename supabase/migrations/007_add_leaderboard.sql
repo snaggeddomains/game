@@ -17,7 +17,7 @@ alter table public.game_results
 
 create index if not exists game_results_player_id_idx on public.game_results (player_id);
 
--- Leaderboard view: players with 5+ games (50+ answers), ranked by avg accuracy
+-- Leaderboard view: players with 3+ games (30+ answers), ranked by avg accuracy
 create or replace view public.game_leaderboard as
   select
     p.id                                                        as player_id,
@@ -31,5 +31,5 @@ create or replace view public.game_leaderboard as
   from public.game_leaderboard_players p
   join public.game_results gr on gr.player_id = p.id
   group by p.id, p.display_name
-  having count(gr.id) >= 5
+  having count(gr.id) >= 3
   order by avg_accuracy desc;

@@ -1,7 +1,3 @@
-alter table public.leaderboard_players rename to game_leaderboard_players;
-
-drop view if exists public.leaderboard;
-
 create or replace view public.game_leaderboard as
   select
     p.id                                                        as player_id,
