@@ -6,6 +6,7 @@ import Link from 'next/link';
 import type { GameMode } from '@/lib/types';
 import { MODE_CONFIG } from '@/lib/types';
 import SnaggedLogo from './SnaggedLogo';
+import LeaderboardProgress from './LeaderboardProgress';
 
 interface Props {
   onStart: (mode: GameMode) => void;
@@ -106,6 +107,9 @@ export default function ModeSelector({ onStart }: Props) {
       {/* Mode selection */}
       <main className="flex flex-1 flex-col items-center bg-game-bg px-4 py-10">
         <div className="w-full max-w-md">
+          {/* Progress nudge for returning registered players */}
+          <LeaderboardProgress />
+
           <h2 className="mb-5 text-center text-sm font-bold uppercase tracking-widest text-brand-navy/50">
             Choose a Mode
           </h2>

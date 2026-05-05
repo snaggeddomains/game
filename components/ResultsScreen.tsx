@@ -5,6 +5,7 @@ import { TOTAL_ROUNDS, POINTS_PER_CORRECT, MODE_CONFIG, namecheapUrl } from '@/l
 import SnaggedLogo from './SnaggedLogo';
 import EmailCapture from './EmailCapture';
 import LeaderboardPrompt from './LeaderboardPrompt';
+import LeaderboardProgress from './LeaderboardProgress';
 
 interface Props {
   rounds: RoundResult[];
@@ -129,6 +130,9 @@ export default function ResultsScreen({ rounds, score, maxStreak, mode, onPlayAg
 
         {/* Leaderboard prompt (shown once to new players) */}
         <LeaderboardPrompt />
+
+        {/* Progress nudge for registered players */}
+        <LeaderboardProgress />
 
         {/* Email capture */}
         <div className="mb-6">
