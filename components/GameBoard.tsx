@@ -81,8 +81,8 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
   const progress = ((roundIndex + (phase === 'reveal' ? 1 : 0)) / TOTAL_ROUNDS) * 100;
   const streakFires = streak >= 2 ? '🔥'.repeat(Math.min(streak, 5)) : '';
 
-  const whoisYear = domain.whois_created
-    ? new Date(domain.whois_created).getFullYear()
+  const whoisDate = domain.whois_created
+    ? new Date(domain.whois_created).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
     : null;
 
   return (
@@ -192,9 +192,9 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
                     {domain.availability_status === 'taken' ? '🔒 Snagged' : '✅ Available'}
                   </span>
                 </div>
-                {domain.availability_status === 'taken' && whoisYear && (
-                  <div className="mt-1 text-xs text-brand-navy/40">
-                    Registered {whoisYear}
+                {domain.availability_status === 'taken' && (
+                  <div className="mt-2 text-xs font-semibold text-brand-navy/60">
+                    {whoisDate ? `Registered ${whoisDate}` : 'Registration date unknown'}
                   </div>
                 )}
               </div>
