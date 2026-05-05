@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
   // Upsert by email — update display_name if they re-register
   const { data, error } = await supabase
-    .from('leaderboard_players')
+    .from('game_leaderboard_players')
     .upsert(
       { display_name: display_name.trim(), email: email.trim().toLowerCase() },
       { onConflict: 'email', ignoreDuplicates: false }

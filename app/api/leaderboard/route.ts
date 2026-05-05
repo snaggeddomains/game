@@ -5,7 +5,7 @@ export async function GET() {
   const supabase = createServiceClient();
 
   const { data, error } = await supabase
-    .from('leaderboard')
+    .from('game_leaderboard')
     .select('rank, display_name, avg_accuracy, games_played, total_answers, best_score, best_streak')
     .order('rank', { ascending: true })
     .limit(100);
