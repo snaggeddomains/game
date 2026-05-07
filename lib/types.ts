@@ -64,5 +64,5 @@ export const MODE_CONFIG: Record<
 
 export function namecheapUrl(domain: string): string {
   const dest = `https://www.namecheap.com/domains/registration/results/?domain=${encodeURIComponent(domain)}`;
-  return `https://namecheap.pxf.io/c/7258761/1632743/5618?u=${encodeURIComponent(dest)}`;
+  return `https://namecheap.pxf.io/c/7258761/386170/5618?u=${encodeURIComponent(dest)}`;
 }
