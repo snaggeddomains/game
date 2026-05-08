@@ -189,6 +189,14 @@ const TAKEN_REGULAR: SeedRecord[] = [
   taken('substack.com',     'com', 'regular', 'blogging'),
   taken('twitch.tv',        'tv',  'regular', 'gaming'),
   taken('etsy.com',         'com', 'regular', 'ecommerce'),
+  taken('character.ai',     'ai',  'regular', 'ai'),
+  taken('jasper.ai',        'ai',  'regular', 'ai'),
+  taken('copy.ai',          'ai',  'regular', 'ai'),
+  taken('perplexity.ai',    'ai',  'regular', 'ai'),
+  taken('stability.ai',     'ai',  'regular', 'ai'),
+  taken('mistral.ai',       'ai',  'regular', 'ai'),
+  taken('together.ai',      'ai',  'regular', 'ai'),
+  taken('claude.ai',        'ai',  'regular', 'ai'),
 ];
 
 const TAKEN_KID: SeedRecord[] = [
