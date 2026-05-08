@@ -19,8 +19,7 @@ export default function AdminLoginPage() {
     });
 
     if (res.ok) {
-      // Hard navigate so Vercel rewrite keeps URL at /admin
-      window.location.href = '/admin';
+      window.location.href = '/game/admin';
     } else {
       const data = await res.json();
       setError(data.error ?? 'Login failed.');

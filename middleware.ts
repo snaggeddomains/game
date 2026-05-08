@@ -10,8 +10,7 @@ export function middleware(req: NextRequest) {
     const expected = process.env.ADMIN_PASSWORD;
 
     if (!expected || token !== expected) {
-      // Redirect to the browser-facing /admin/login (goes through Vercel rewrite)
-      return NextResponse.redirect(new URL('/admin/login', req.url));
+      return NextResponse.redirect(new URL('/game/admin/login', req.url));
     }
   }
 
