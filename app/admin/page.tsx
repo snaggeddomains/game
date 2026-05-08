@@ -14,7 +14,7 @@ export default function AddDomainPage() {
     setMessage('');
 
     try {
-      const res = await fetch('/game/api/admin/add-domain', {
+      const res = await fetch('/api/admin/add-domain', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ domain: domain.trim().toLowerCase(), destination_url: destinationUrl.trim() }),
