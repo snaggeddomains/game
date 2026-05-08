@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/admin", "destination": "/game/admin" },
+    { "source": "/admin/(.*)", "destination": "/game/admin/$1" }
+  ]
+}
