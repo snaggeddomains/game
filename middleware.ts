@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const LOGIN_PATH = '/game/admin/login';
-
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (pathname.startsWith('/game/admin') && pathname !== LOGIN_PATH) {
+  if (pathname !== '/admin/login') {
     const token = req.cookies.get('admin_auth')?.value;
     const expected = process.env.ADMIN_PASSWORD;
 
     if (!expected || token !== expected) {
-      return NextResponse.redirect(new URL('/game/admin/login', req.url));
+      const loginUrl = req.nextUrl.clone();
+      loginUrl.pathname = '/admin/login';
+      return NextResponse.redirect(loginUrl);
     }
   }
 
@@ -18,5 +18,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/game/admin/:path*'],
+  matcher: ['/admin', '/admin/:path*'],
 };
