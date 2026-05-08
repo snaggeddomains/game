@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-export const GAMES_TO_QUALIFY = 10;
+export const GAMES_TO_QUALIFY = 1;
 export const LS_GAMES_KEY = 'lbGamesPlayed';
 export const LS_PLAYER_KEY = 'lbPlayerId';
 
