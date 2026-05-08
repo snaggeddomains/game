@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-export const GAMES_TO_QUALIFY = 10;
+export const GAMES_TO_QUALIFY = 1;
 export const LS_GAMES_KEY = 'lbGamesPlayed';
 export const LS_PLAYER_KEY = 'lbPlayerId';
 
@@ -45,9 +45,7 @@ export default function LeaderboardProgress() {
     <div className="mb-6 rounded-2xl border-2 border-game-border bg-white px-5 py-4">
       <div className="mb-2 flex items-center justify-between">
         <p className="font-bold text-brand-navy">
-          {remaining === 1
-            ? '1 more game to qualify!'
-            : `${remaining} more games to qualify for the leaderboard`}
+          Complete 1 game to qualify for the leaderboard
         </p>
         <span className="text-xs font-semibold text-brand-navy/40">
           {gamesPlayed}/{GAMES_TO_QUALIFY}

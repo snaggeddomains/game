@@ -42,7 +42,7 @@ export default function LeaderboardPage() {
           Leaderboard
         </h1>
         <p className="mt-2 text-sm font-medium text-brand-navy/60">
-          Top players ranked by accuracy &mdash; 100 answers minimum to qualify
+          Top players ranked by accuracy &mdash; 10 answers minimum to qualify
         </p>
 
         {/* Wave */}
