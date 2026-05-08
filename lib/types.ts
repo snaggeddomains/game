@@ -1,5 +1,4 @@
-export type GameMode = 'regular' | 'kid_friendly' | 'founder' | 'adult';
-export type Difficulty = 'easy' | 'medium' | 'hard';
+export type GameMode = 'regular' | 'kid_friendly' | 'adult';
 export type AvailabilityStatus = 'available' | 'taken' | 'unknown';
 export type GamePhase = 'mode-select' | 'loading' | 'playing' | 'reveal' | 'complete';
 
@@ -8,11 +7,9 @@ export interface Domain {
   domain: string;
   tld: string;
   mode: GameMode;
-  category: string | null;
-  difficulty: Difficulty;
   availability_status: AvailabilityStatus;
+  registered_at: string | null;
   last_checked_at: string | null;
-  source: string | null;
   times_shown: number;
   correct_guess_rate: number | null;
   created_at: string;
@@ -57,12 +54,6 @@ export const MODE_CONFIG: Record<
     description: 'Silly, safe, family-friendly names. Perfect for all ages.',
     color: 'from-purple-600 to-pink-700',
   },
-  founder: {
-    label: 'Founder Mode',
-    emoji: '🚀',
-    description: 'Startup-style brandable names across AI, SaaS, fintech & more.',
-    color: 'from-orange-600 to-amber-700',
-  },
   adult: {
     label: 'Adult Mode',
     emoji: '🔞',
@@ -70,3 +61,8 @@ export const MODE_CONFIG: Record<
     color: 'from-rose-700 to-red-900',
   },
 };
+
+export function namecheapUrl(domain: string): string {
+  const dest = `https://www.namecheap.com/domains/registration/results/?domain=${encodeURIComponent(domain)}`;
+  return `https://namecheap.pxf.io/c/7258761/386170/5618?u=${encodeURIComponent(dest)}`;
+}

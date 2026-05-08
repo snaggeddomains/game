@@ -1,8 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createServiceClient } from '@/lib/supabase';
 import type { GameMode } from '@/lib/types';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+async function sendNotification(email: string, mode: GameMode | null, score: number | null) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.error('Resend: RESEND_API_KEY not set');
+    return;
+  }
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'game@snagged.com',
+        to: 'rob@snagged.com',
+        subject: `New signup: ${email}`,
+        text: `New email signup on Is it Snagged?\n\nEmail: ${email}\nMode: ${mode ?? 'unknown'}\nScore: ${score ?? 'N/A'}`,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`Resend error ${res.status}:`, body);
+    }
+  } catch (err) {
+    console.error('Resend fetch failed:', err);
+  }
+}
 
 export async function POST(req: NextRequest) {
   let body: { email: string; mode?: GameMode; score?: number };
@@ -18,6 +48,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'A valid email address is required.' }, { status: 400 });
   }
 
+  const supabase = createServiceClient();
   const { error } = await supabase.from('game_email_captures').insert({
     email: email.toLowerCase().trim(),
     mode: mode ?? null,
@@ -25,13 +56,14 @@ export async function POST(req: NextRequest) {
   });
 
   if (error) {
-    // Ignore duplicate-email errors gracefully
     if (error.code === '23505') {
       return NextResponse.json({ ok: true, duplicate: true });
     }
     console.error('Error saving email capture:', error);
     return NextResponse.json({ error: 'Failed to save email.' }, { status: 500 });
   }
+
+  await sendNotification(email, mode ?? null, score ?? null);
 
   return NextResponse.json({ ok: true });
 }

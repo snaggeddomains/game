@@ -18,152 +18,418 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 
-// Load .env.local before importing supabase helpers
 dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 
 import { createClient } from '@supabase/supabase-js';
-import type { AvailabilityStatus, Difficulty, GameMode } from '../lib/types';
+import type { AvailabilityStatus, GameMode } from '../lib/types';
 
 interface SeedRecord {
   domain: string;
   tld: string;
   mode: GameMode;
-  category: string | null;
-  difficulty: Difficulty;
   availability_status: AvailabilityStatus;
   last_checked_at: string | null;
-  source: string;
 }
 
 // ---------------------------------------------------------------------------
-// Built-in seed data (used when no JSON file is provided)
-// This is the canonical starting set — covers all 4 modes with a mix of
-// taken (well-known brands) and available (invented, likely-free names).
+// Word banks — 45 × 45 = 2,025 available combos per mode
+// ---------------------------------------------------------------------------
+
+// ── REGULAR ─────────────────────────────────────────────────────────────────
+const REGULAR_A = [
+  'swift', 'bright', 'dark', 'frost', 'glow', 'drift', 'spark', 'amber',
+  'jade', 'crimson', 'silver', 'golden', 'iron', 'velvet', 'cobalt', 'lunar',
+  'solar', 'thunder', 'shadow', 'wild', 'calm', 'brave', 'sharp', 'keen',
+  'cool', 'warm', 'deep', 'wide', 'fast', 'round', 'pure', 'clear', 'clean',
+  'smart', 'tough', 'soft', 'grand', 'prime', 'open', 'fresh', 'crisp',
+  'lush', 'grey', 'bold', 'bare',
+];
+const REGULAR_B = [
+  'loop', 'path', 'lab', 'nest', 'den', 'bay', 'run', 'port', 'hub', 'hive',
+  'forge', 'vault', 'ridge', 'peak', 'grove', 'creek', 'cove', 'field',
+  'yard', 'bridge', 'base', 'post', 'mark', 'line', 'wave', 'beam', 'core',
+  'edge', 'gate', 'helm', 'keep', 'lake', 'node', 'pier', 'reef', 'shed',
+  'tide', 'turn', 'wall', 'well', 'wire', 'wood', 'zone', 'trail', 'bench',
+];
+
+// ── KID FRIENDLY ─────────────────────────────────────────────────────────────
+const KID_A = [
+  'giggle', 'wobble', 'snuggle', 'rainbow', 'funny', 'jelly', 'sparkle',
+  'silly', 'fluffy', 'candy', 'banana', 'wiggle', 'doodle', 'bouncy',
+  'tickle', 'fizzy', 'happy', 'bumble', 'glitter', 'squiggle', 'noodle',
+  'puddle', 'twinkle', 'fuzzy', 'jumpy', 'zippy', 'bubbly', 'cuddly',
+  'wacky', 'goofy', 'grumpy', 'sunny', 'breezy', 'chilly', 'cozy', 'dreamy',
+  'fairy', 'fancy', 'floppy', 'frosty', 'jazzy', 'leafy', 'lucky', 'merry',
+  'peppy',
+];
+const KID_B = [
+  'paws', 'world', 'bug', 'slime', 'farm', 'castle', 'quest', 'bucket',
+  'dino', 'cloud', 'jump', 'toes', 'beast', 'cats', 'frogs', 'storm',
+  'monster', 'pops', 'snorts', 'boo', 'slug', 'dance', 'land', 'town',
+  'cub', 'dream', 'drop', 'fort', 'glen', 'grove', 'hill', 'hive', 'hood',
+  'jam', 'jungle', 'lake', 'leaf', 'moon', 'petal', 'pond', 'rock', 'trail',
+  'bark', 'nest', 'camp',
+];
+
+// ── FOUNDER ───────────────────────────────────────────────────────────────────
+const FOUNDER_A = [
+  'nexus', 'vertex', 'apex', 'prism', 'pulse', 'vault', 'stack', 'flow',
+  'sync', 'launch', 'build', 'scale', 'ship', 'track', 'merge', 'index',
+  'deploy', 'query', 'parse', 'render', 'stream', 'cache', 'fetch', 'relay',
+  'route', 'scope', 'shift', 'spin', 'split', 'store', 'trace', 'trigger',
+  'batch', 'clone', 'commit', 'crawl', 'draft', 'embed', 'encode', 'extend',
+  'filter', 'graph', 'hash', 'inject', 'forge',
+];
+const FOUNDER_B = [
+  'labs', 'metrics', 'hub', 'base', 'bridge', 'cloud', 'dash', 'data',
+  'deck', 'desk', 'dock', 'gate', 'grid', 'guide', 'kit', 'layer', 'ledger',
+  'lens', 'log', 'loop', 'map', 'mark', 'matrix', 'mesh', 'mind', 'mint',
+  'mix', 'model', 'module', 'node', 'orbit', 'pad', 'panel', 'park', 'pipe',
+  'port', 'rail', 'ring', 'root', 'scan', 'seed', 'wire', 'zone', 'hq',
+  'works',
+];
+
+// ── ADULT ─────────────────────────────────────────────────────────────────────
+const ADULT_A = [
+  'dirty', 'naughty', 'kinky', 'horny', 'sexy', 'filthy', 'lusty', 'frisky',
+  'spicy', 'nasty', 'saucy', 'wicked', 'raunchy', 'steamy', 'naked', 'nude',
+  'bare', 'hot', 'wild', 'wet', 'hung', 'thick', 'tight', 'rough', 'deep',
+  'juicy', 'banging', 'pounding', 'licking', 'sucking', 'stroking', 'spanking',
+  'fucking', 'slutty', 'busty', 'throbbing', 'dripping', 'sloppy', 'sweaty',
+  'sticky', 'creamy', 'cheeky', 'risky', 'taboo', 'lewd',
+];
+const ADULT_B = [
+  'cock', 'dick', 'balls', 'ass', 'tits', 'boobs', 'pussy', 'butt', 'booty',
+  'shaft', 'rod', 'boner', 'sack', 'nuts', 'hole', 'lips', 'curves', 'hips',
+  'thighs', 'nipples', 'package', 'bulge', 'groin', 'meat', 'pole', 'tool',
+  'junk', 'rear', 'backdoor', 'glory', 'loins', 'flesh', 'parts', 'goods',
+  'buns', 'cheeks', 'pipe', 'wand', 'stick', 'club', 'bone', 'zone', 'den',
+  'lair', 'pit',
+];
+
+// ---------------------------------------------------------------------------
+// Helper
+// ---------------------------------------------------------------------------
+
+function crossJoin(
+  wordsA: string[],
+  wordsB: string[],
+  tlds: string[],
+  mode: GameMode,
+  categories: string[],
+  status: AvailabilityStatus,
+): SeedRecord[] {
+  const records: SeedRecord[] = [];
+  let i = 0;
+  for (const a of wordsA) {
+    for (const b of wordsB) {
+      const tld = tlds[i % tlds.length];
+      records.push({
+        domain: `${a}${b}.${tld}`,
+        tld,
+        mode,
+        availability_status: status,
+        last_checked_at: null,
+      });
+      i++;
+    }
+  }
+  return records;
+}
+
+// ---------------------------------------------------------------------------
+// Taken domains — real well-known brands per mode
+// ---------------------------------------------------------------------------
+
+function taken(
+  domain: string,
+  tld: string,
+  mode: GameMode,
+  _category?: string,
+): SeedRecord {
+  return { domain, tld, mode, availability_status: 'taken', last_checked_at: null };
+}
+
+const TAKEN_REGULAR: SeedRecord[] = [
+  taken('google.com',       'com', 'regular', 'search'),
+  taken('amazon.com',       'com', 'regular', 'ecommerce'),
+  taken('netflix.com',      'com', 'regular', 'streaming'),
+  taken('spotify.com',      'com', 'regular', 'music'),
+  taken('reddit.com',       'com', 'regular', 'social'),
+  taken('discord.com',      'com', 'regular', 'social'),
+  taken('dropbox.com',      'com', 'regular', 'storage'),
+  taken('shopify.com',      'com', 'regular', 'ecommerce'),
+  taken('squarespace.com',  'com', 'regular', 'website'),
+  taken('airbnb.com',       'com', 'regular', 'travel'),
+  taken('pinterest.com',    'com', 'regular', 'social'),
+  taken('uber.com',         'com', 'regular', 'transport'),
+  taken('snapchat.com',     'com', 'regular', 'social'),
+  taken('youtube.com',      'com', 'regular', 'video'),
+  taken('tiktok.com',       'com', 'regular', 'social'),
+  taken('instagram.com',    'com', 'regular', 'social'),
+  taken('facebook.com',     'com', 'regular', 'social'),
+  taken('twitter.com',      'com', 'regular', 'social'),
+  taken('linkedin.com',     'com', 'regular', 'social'),
+  taken('whatsapp.com',     'com', 'regular', 'messaging'),
+  taken('slack.com',        'com', 'regular', 'messaging'),
+  taken('zoom.us',          'us',  'regular', 'video'),
+  taken('hubspot.com',      'com', 'regular', 'marketing'),
+  taken('mailchimp.com',    'com', 'regular', 'marketing'),
+  taken('salesforce.com',   'com', 'regular', 'crm'),
+  taken('zendesk.com',      'com', 'regular', 'crm'),
+  taken('hootsuite.com',    'com', 'regular', 'marketing'),
+  taken('canva.com',        'com', 'regular', 'design'),
+  taken('trello.com',       'com', 'regular', 'productivity'),
+  taken('asana.com',        'com', 'regular', 'productivity'),
+  taken('basecamp.com',     'com', 'regular', 'productivity'),
+  taken('paypal.com',       'com', 'regular', 'finance'),
+  taken('venmo.com',        'com', 'regular', 'finance'),
+  taken('robinhood.com',    'com', 'regular', 'finance'),
+  taken('wix.com',          'com', 'regular', 'website'),
+  taken('wordpress.com',    'com', 'regular', 'website'),
+  taken('medium.com',       'com', 'regular', 'blogging'),
+  taken('substack.com',     'com', 'regular', 'blogging'),
+  taken('twitch.tv',        'tv',  'regular', 'gaming'),
+  taken('etsy.com',         'com', 'regular', 'ecommerce'),
+  taken('scale.ai',     'ai', 'regular'),
+  taken('luma.ai',      'ai', 'regular'),
+  taken('poly.ai',      'ai', 'regular'),
+  taken('tome.ai',      'ai', 'regular'),
+  taken('seek.ai',      'ai', 'regular'),
+  taken('stack.ai',     'ai', 'regular'),
+  taken('comet.ai',     'ai', 'regular'),
+  taken('norm.ai',      'ai', 'regular'),
+  taken('loop.ai',      'ai', 'regular'),
+  taken('iris.ai',      'ai', 'regular'),
+  taken('dust.ai',      'ai', 'regular'),
+  taken('move.ai',      'ai', 'regular'),
+  taken('apex.ai',      'ai', 'regular'),
+  taken('wave.ai',      'ai', 'regular'),
+  taken('craft.ai',     'ai', 'regular'),
+  taken('kore.ai',      'ai', 'regular'),
+  taken('vast.ai',      'ai', 'regular'),
+  taken('atlas.ai',     'ai', 'regular'),
+  taken('hive.ai',      'ai', 'regular'),
+  taken('zest.ai',      'ai', 'regular'),
+  taken('muse.ai',      'ai', 'regular'),
+  taken('pilot.ai',     'ai', 'regular'),
+  taken('bria.ai',      'ai', 'regular'),
+  taken('magic.ai',     'ai', 'regular'),
+  taken('speak.ai',     'ai', 'regular'),
+  taken('alan.ai',      'ai', 'regular'),
+  taken('type.ai',      'ai', 'regular'),
+  taken('beam.ai',      'ai', 'regular'),
+  taken('flux.ai',      'ai', 'regular'),
+  taken('play.ai',      'ai', 'regular'),
+  taken('prism.ai',     'ai', 'regular'),
+  taken('helm.ai',      'ai', 'regular'),
+  taken('leap.ai',      'ai', 'regular'),
+  taken('mesh.ai',      'ai', 'regular'),
+  taken('path.ai',      'ai', 'regular'),
+  taken('unit.ai',      'ai', 'regular'),
+  taken('edge.ai',      'ai', 'regular'),
+  taken('kern.ai',      'ai', 'regular'),
+  taken('otto.ai',      'ai', 'regular'),
+  taken('echo.ai',      'ai', 'regular'),
+  taken('andi.ai',      'ai', 'regular'),
+  taken('numa.ai',      'ai', 'regular'),
+  taken('roam.ai',      'ai', 'regular'),
+  taken('drift.ai',     'ai', 'regular'),
+  taken('nova.ai',      'ai', 'regular'),
+  taken('lang.ai',      'ai', 'regular'),
+  taken('aria.ai',      'ai', 'regular'),
+  taken('sage.ai',      'ai', 'regular'),
+  taken('spark.ai',     'ai', 'regular'),
+  taken('dash.ai',      'ai', 'regular'),
+  taken('grid.ai',      'ai', 'regular'),
+  taken('base.ai',      'ai', 'regular'),
+  taken('shift.ai',     'ai', 'regular'),
+  taken('trace.ai',     'ai', 'regular'),
+  taken('blend.ai',     'ai', 'regular'),
+  taken('node.ai',      'ai', 'regular'),
+  taken('core.ai',      'ai', 'regular'),
+  taken('bolt.ai',      'ai', 'regular'),
+  taken('draft.ai',     'ai', 'regular'),
+  taken('focal.ai',     'ai', 'regular'),
+  taken('glow.ai',      'ai', 'regular'),
+  taken('keen.ai',      'ai', 'regular'),
+  taken('warp.ai',      'ai', 'regular'),
+  taken('mint.ai',      'ai', 'regular'),
+  taken('nest.ai',      'ai', 'regular'),
+  taken('peak.ai',      'ai', 'regular'),
+  taken('root.ai',      'ai', 'regular'),
+  taken('arch.ai',      'ai', 'regular'),
+  taken('clay.ai',      'ai', 'regular'),
+  taken('gate.ai',      'ai', 'regular'),
+  taken('jade.ai',      'ai', 'regular'),
+  taken('lark.ai',      'ai', 'regular'),
+  taken('noon.ai',      'ai', 'regular'),
+  taken('pace.ai',      'ai', 'regular'),
+  taken('vale.ai',      'ai', 'regular'),
+  taken('bark.ai',      'ai', 'regular'),
+  taken('dune.ai',      'ai', 'regular'),
+  taken('fern.ai',      'ai', 'regular'),
+  taken('hull.ai',      'ai', 'regular'),
+  taken('knot.ai',      'ai', 'regular'),
+  taken('mast.ai',      'ai', 'regular'),
+  taken('opal.ai',      'ai', 'regular'),
+  taken('sail.ai',      'ai', 'regular'),
+  taken('fold.ai',      'ai', 'regular'),
+  taken('wind.ai',      'ai', 'regular'),
+  taken('isle.ai',      'ai', 'regular'),
+  taken('snap.ai',      'ai', 'regular'),
+  taken('forge.ai',     'ai', 'regular'),
+  taken('cleo.ai',      'ai', 'regular'),
+  taken('icon.ai',      'ai', 'regular'),
+  taken('trim.ai',      'ai', 'regular'),
+  taken('vibe.ai',      'ai', 'regular'),
+  taken('glide.ai',     'ai', 'regular'),
+  taken('reef.ai',      'ai', 'regular'),
+  taken('zeal.ai',      'ai', 'regular'),
+  taken('coda.ai',      'ai', 'regular'),
+  taken('inca.ai',      'ai', 'regular'),
+  taken('nuro.ai',      'ai', 'regular'),
+  taken('cohere.ai',    'ai', 'regular'),
+];
+
+const TAKEN_KID: SeedRecord[] = [
+  taken('roblox.com',          'com', 'kid_friendly', 'gaming'),
+  taken('minecraft.net',       'net', 'kid_friendly', 'gaming'),
+  taken('pokemon.com',         'com', 'kid_friendly', 'gaming'),
+  taken('pbskids.org',         'org', 'kid_friendly', 'education'),
+  taken('coolmathgames.com',   'com', 'kid_friendly', 'education'),
+  taken('abcmouse.com',        'com', 'kid_friendly', 'education'),
+  taken('funbrain.com',        'com', 'kid_friendly', 'education'),
+  taken('nickjr.com',          'com', 'kid_friendly', 'entertainment'),
+  taken('poptropica.com',      'com', 'kid_friendly', 'gaming'),
+  taken('starfall.com',        'com', 'kid_friendly', 'education'),
+  taken('khanacademy.org',     'org', 'kid_friendly', 'education'),
+  taken('duolingo.com',        'com', 'kid_friendly', 'education'),
+  taken('brainpop.com',        'com', 'kid_friendly', 'education'),
+  taken('noggin.com',          'com', 'kid_friendly', 'entertainment'),
+  taken('nickelodeon.com',     'com', 'kid_friendly', 'entertainment'),
+  taken('cartoonnetwork.com',  'com', 'kid_friendly', 'entertainment'),
+  taken('disneyjr.com',        'com', 'kid_friendly', 'entertainment'),
+  taken('sesamestreet.org',    'org', 'kid_friendly', 'education'),
+  taken('scratch.mit.edu',     'edu', 'kid_friendly', 'education'),
+  taken('prodigygame.com',     'com', 'kid_friendly', 'education'),
+  taken('classdojo.com',       'com', 'kid_friendly', 'education'),
+  taken('storylineonline.net', 'net', 'kid_friendly', 'education'),
+  taken('zearn.org',           'org', 'kid_friendly', 'education'),
+  taken('tynker.com',          'com', 'kid_friendly', 'education'),
+  taken('kodable.com',         'com', 'kid_friendly', 'education'),
+];
+
+const TAKEN_FOUNDER: SeedRecord[] = [
+  taken('stripe.com',       'com', 'founder', 'fintech'),
+  taken('notion.com',       'com', 'founder', 'productivity'),
+  taken('figma.com',        'com', 'founder', 'design'),
+  taken('vercel.com',       'com', 'founder', 'devtools'),
+  taken('openai.com',       'com', 'founder', 'ai'),
+  taken('anthropic.com',    'com', 'founder', 'ai'),
+  taken('airtable.com',     'com', 'founder', 'productivity'),
+  taken('webflow.com',      'com', 'founder', 'website'),
+  taken('amplitude.com',    'com', 'founder', 'analytics'),
+  taken('intercom.com',     'com', 'founder', 'crm'),
+  taken('mixpanel.com',     'com', 'founder', 'analytics'),
+  taken('datadog.com',      'com', 'founder', 'infra'),
+  taken('pagerduty.com',    'com', 'founder', 'infra'),
+  taken('postman.com',      'com', 'founder', 'devtools'),
+  taken('hashicorp.com',    'com', 'founder', 'infra'),
+  taken('terraform.io',     'io',  'founder', 'infra'),
+  taken('circleci.com',     'com', 'founder', 'devtools'),
+  taken('gitpod.io',        'io',  'founder', 'devtools'),
+  taken('netlify.com',      'com', 'founder', 'devtools'),
+  taken('heroku.com',       'com', 'founder', 'infra'),
+  taken('digitalocean.com', 'com', 'founder', 'infra'),
+  taken('fly.io',           'io',  'founder', 'infra'),
+  taken('supabase.com',     'com', 'founder', 'devtools'),
+  taken('planetscale.com',  'com', 'founder', 'devtools'),
+  taken('clerk.com',        'com', 'founder', 'security'),
+  taken('auth0.com',        'com', 'founder', 'security'),
+  taken('okta.com',         'com', 'founder', 'security'),
+  taken('twilio.com',       'com', 'founder', 'saas'),
+  taken('sendgrid.com',     'com', 'founder', 'saas'),
+  taken('resend.com',       'com', 'founder', 'saas'),
+  taken('render.com',       'com', 'founder', 'infra'),
+  taken('railway.app',      'app', 'founder', 'infra'),
+  taken('linear.app',       'app', 'founder', 'productivity'),
+  taken('retool.com',       'com', 'founder', 'devtools'),
+  taken('segment.com',      'com', 'founder', 'analytics'),
+];
+
+const TAKEN_ADULT: SeedRecord[] = [
+  taken('tinder.com',             'com', 'adult', 'dating'),
+  taken('bumble.com',             'com', 'adult', 'dating'),
+  taken('grindr.com',             'com', 'adult', 'dating'),
+  taken('onlyfans.com',           'com', 'adult', 'adult'),
+  taken('playboy.com',            'com', 'adult', 'adult'),
+  taken('match.com',              'com', 'adult', 'dating'),
+  taken('okcupid.com',            'com', 'adult', 'dating'),
+  taken('zoosk.com',              'com', 'adult', 'dating'),
+  taken('hinge.co',               'co',  'adult', 'dating'),
+  taken('pof.com',                'com', 'adult', 'dating'),
+  taken('chaturbate.com',         'com', 'adult', 'adult'),
+  taken('adultfriendfinder.com',  'com', 'adult', 'dating'),
+  taken('seeking.com',            'com', 'adult', 'dating'),
+  taken('ashleymadison.com',      'com', 'adult', 'dating'),
+  taken('fetlife.com',            'com', 'adult', 'dating'),
+  taken('pornhub.com',            'com', 'adult', 'adult'),
+  taken('xvideos.com',            'com', 'adult', 'adult'),
+  taken('xnxx.com',               'com', 'adult', 'adult'),
+  taken('redtube.com',            'com', 'adult', 'adult'),
+  taken('brazzers.com',           'com', 'adult', 'adult'),
+  taken('bangbros.com',           'com', 'adult', 'adult'),
+  taken('naughtyamerica.com',     'com', 'adult', 'adult'),
+  taken('livejasmin.com',         'com', 'adult', 'adult'),
+  taken('camsoda.com',            'com', 'adult', 'adult'),
+  taken('stripchat.com',          'com', 'adult', 'adult'),
+];
+
+// ---------------------------------------------------------------------------
+// Built-in seed data
+// Each crossJoin produces 45 × 45 = 2,025 available domains per mode.
 // ---------------------------------------------------------------------------
 const BUILT_IN_SEEDS: SeedRecord[] = [
   // ── REGULAR ──────────────────────────────────────────────────────────────
-  // Taken (well-known brands — high confidence)
-  { domain: 'google.com', tld: 'com', mode: 'regular', category: 'search', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'amazon.com', tld: 'com', mode: 'regular', category: 'ecommerce', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'netflix.com', tld: 'com', mode: 'regular', category: 'streaming', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'spotify.com', tld: 'com', mode: 'regular', category: 'music', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'reddit.com', tld: 'com', mode: 'regular', category: 'social', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'twitch.tv', tld: 'tv', mode: 'regular', category: 'gaming', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'discord.com', tld: 'com', mode: 'regular', category: 'social', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'dropbox.com', tld: 'com', mode: 'regular', category: 'storage', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'shopify.com', tld: 'com', mode: 'regular', category: 'ecommerce', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'zoom.us', tld: 'us', mode: 'regular', category: 'video', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'squarespace.com', tld: 'com', mode: 'regular', category: 'website', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'airbnb.com', tld: 'com', mode: 'regular', category: 'travel', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'pinterest.com', tld: 'com', mode: 'regular', category: 'social', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'uber.com', tld: 'com', mode: 'regular', category: 'transport', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'snapchat.com', tld: 'com', mode: 'regular', category: 'social', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  // Available (invented brandable names)
-  { domain: 'breezeloop.com', tld: 'com', mode: 'regular', category: 'lifestyle', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'foxpaw.io', tld: 'io', mode: 'regular', category: 'tech', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'lunarbrew.co', tld: 'co', mode: 'regular', category: 'food', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'driftlab.io', tld: 'io', mode: 'regular', category: 'tech', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'pebblepath.com', tld: 'com', mode: 'regular', category: 'lifestyle', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'velvetjar.io', tld: 'io', mode: 'regular', category: 'lifestyle', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'noodlecraft.com', tld: 'com', mode: 'regular', category: 'food', difficulty: 'easy', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'frostwave.co', tld: 'co', mode: 'regular', category: 'lifestyle', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'sparkroot.io', tld: 'io', mode: 'regular', category: 'tech', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'tumbleberry.io', tld: 'io', mode: 'regular', category: 'lifestyle', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'sizzleworks.com', tld: 'com', mode: 'regular', category: 'food', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'cobaltden.com', tld: 'com', mode: 'regular', category: 'lifestyle', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'emberpath.io', tld: 'io', mode: 'regular', category: 'lifestyle', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'glowcraft.co', tld: 'co', mode: 'regular', category: 'beauty', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'hazelbrook.io', tld: 'io', mode: 'regular', category: 'lifestyle', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
+  ...TAKEN_REGULAR,
+  ...crossJoin(
+    REGULAR_A, REGULAR_B,
+    ['com', 'net', 'io', 'org', 'ai'],
+    'regular',
+    ['tech', 'lifestyle', 'food', 'finance', 'health', 'beauty', 'travel', 'sports', 'home', 'business'],
+    'available',
+  ),
 
   // ── KID FRIENDLY ─────────────────────────────────────────────────────────
-  { domain: 'roblox.com', tld: 'com', mode: 'kid_friendly', category: 'gaming', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'minecraft.net', tld: 'net', mode: 'kid_friendly', category: 'gaming', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'pokemon.com', tld: 'com', mode: 'kid_friendly', category: 'gaming', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'pbskids.org', tld: 'org', mode: 'kid_friendly', category: 'education', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'coolmathgames.com', tld: 'com', mode: 'kid_friendly', category: 'education', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'abcmouse.com', tld: 'com', mode: 'kid_friendly', category: 'education', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'funbrain.com', tld: 'com', mode: 'kid_friendly', category: 'education', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'nickjr.com', tld: 'com', mode: 'kid_friendly', category: 'entertainment', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'poptropica.com', tld: 'com', mode: 'kid_friendly', category: 'gaming', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'starfall.com', tld: 'com', mode: 'kid_friendly', category: 'education', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  // Available
-  { domain: 'gigglepaws.com', tld: 'com', mode: 'kid_friendly', category: 'animals', difficulty: 'easy', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'wobbleworld.co', tld: 'co', mode: 'kid_friendly', category: 'play', difficulty: 'easy', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'snugglebug.io', tld: 'io', mode: 'kid_friendly', category: 'animals', difficulty: 'easy', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'rainbowslime.com', tld: 'com', mode: 'kid_friendly', category: 'play', difficulty: 'easy', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'jellycastle.net', tld: 'net', mode: 'kid_friendly', category: 'play', difficulty: 'easy', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'sparklequest.com', tld: 'com', mode: 'kid_friendly', category: 'adventure', difficulty: 'easy', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'fluffydino.io', tld: 'io', mode: 'kid_friendly', category: 'animals', difficulty: 'easy', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'candycloud.net', tld: 'net', mode: 'kid_friendly', category: 'food', difficulty: 'easy', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'bananajump.com', tld: 'com', mode: 'kid_friendly', category: 'play', difficulty: 'easy', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'doodlebeast.io', tld: 'io', mode: 'kid_friendly', category: 'animals', difficulty: 'easy', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'bouncyfrogs.co', tld: 'co', mode: 'kid_friendly', category: 'animals', difficulty: 'easy', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'puddlejump.com', tld: 'com', mode: 'kid_friendly', category: 'play', difficulty: 'easy', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'ticklemonster.co', tld: 'co', mode: 'kid_friendly', category: 'play', difficulty: 'easy', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'fizzypops.io', tld: 'io', mode: 'kid_friendly', category: 'food', difficulty: 'easy', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'noodledance.co', tld: 'co', mode: 'kid_friendly', category: 'play', difficulty: 'easy', availability_status: 'available', last_checked_at: null, source: 'seed' },
+  ...TAKEN_KID,
+  ...crossJoin(
+    KID_A, KID_B,
+    ['com', 'net', 'io', 'org'],
+    'kid_friendly',
+    ['animals', 'play', 'food', 'adventure', 'education', 'nature'],
+    'available',
+  ),
 
-  // ── FOUNDER MODE ─────────────────────────────────────────────────────────
-  { domain: 'stripe.com', tld: 'com', mode: 'founder', category: 'fintech', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'notion.com', tld: 'com', mode: 'founder', category: 'productivity', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'figma.com', tld: 'com', mode: 'founder', category: 'design', difficulty: 'hard', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'vercel.com', tld: 'com', mode: 'founder', category: 'devtools', difficulty: 'hard', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'openai.com', tld: 'com', mode: 'founder', category: 'ai', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'anthropic.com', tld: 'com', mode: 'founder', category: 'ai', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'airtable.com', tld: 'com', mode: 'founder', category: 'productivity', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'webflow.com', tld: 'com', mode: 'founder', category: 'website', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'segment.com', tld: 'com', mode: 'founder', category: 'analytics', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'amplitude.com', tld: 'com', mode: 'founder', category: 'analytics', difficulty: 'hard', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'intercom.com', tld: 'com', mode: 'founder', category: 'crm', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'mixpanel.com', tld: 'com', mode: 'founder', category: 'analytics', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'datadog.com', tld: 'com', mode: 'founder', category: 'infra', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'pagerduty.com', tld: 'com', mode: 'founder', category: 'infra', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'postman.com', tld: 'com', mode: 'founder', category: 'devtools', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  // Available
-  { domain: 'nexara.io', tld: 'io', mode: 'founder', category: 'ai', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'vantix.co', tld: 'co', mode: 'founder', category: 'saas', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'klaaro.com', tld: 'com', mode: 'founder', category: 'saas', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'synaptiq.ai', tld: 'ai', mode: 'founder', category: 'ai', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'floware.co', tld: 'co', mode: 'founder', category: 'productivity', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'cruxai.com', tld: 'com', mode: 'founder', category: 'ai', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'nexflow.ai', tld: 'ai', mode: 'founder', category: 'ai', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'datasync.co', tld: 'co', mode: 'founder', category: 'saas', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'lumenos.io', tld: 'io', mode: 'founder', category: 'ai', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'stackvault.com', tld: 'com', mode: 'founder', category: 'saas', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'buildfast.co', tld: 'co', mode: 'founder', category: 'productivity', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'codewarp.io', tld: 'io', mode: 'founder', category: 'devtools', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'pulsemetric.com', tld: 'com', mode: 'founder', category: 'analytics', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'indexly.ai', tld: 'ai', mode: 'founder', category: 'ai', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'mergeflow.io', tld: 'io', mode: 'founder', category: 'devtools', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'cloudmint.io', tld: 'io', mode: 'founder', category: 'infra', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
+  // ── FOUNDER ──────────────────────────────────────────────────────────────
+  ...TAKEN_FOUNDER,
+  ...crossJoin(
+    FOUNDER_A, FOUNDER_B,
+    ['com', 'io', 'ai', 'net', 'org'],
+    'founder',
+    ['ai', 'saas', 'devtools', 'analytics', 'infra', 'productivity', 'fintech', 'crm', 'security', 'startup'],
+    'available',
+  ),
 
-  // ── ADULT MODE ────────────────────────────────────────────────────────────
-  { domain: 'tinder.com', tld: 'com', mode: 'adult', category: 'dating', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'bumble.com', tld: 'com', mode: 'adult', category: 'dating', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'grindr.com', tld: 'com', mode: 'adult', category: 'dating', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'onlyfans.com', tld: 'com', mode: 'adult', category: 'adult', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'playboy.com', tld: 'com', mode: 'adult', category: 'adult', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'match.com', tld: 'com', mode: 'adult', category: 'dating', difficulty: 'easy', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'okcupid.com', tld: 'com', mode: 'adult', category: 'dating', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'zoosk.com', tld: 'com', mode: 'adult', category: 'dating', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'hinge.co', tld: 'co', mode: 'adult', category: 'dating', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  { domain: 'pof.com', tld: 'com', mode: 'adult', category: 'dating', difficulty: 'medium', availability_status: 'taken', last_checked_at: null, source: 'seed' },
-  // Available
-  { domain: 'bawdybanter.co', tld: 'co', mode: 'adult', category: 'humor', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'wickedwordplay.com', tld: 'com', mode: 'adult', category: 'humor', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'saucyquiz.io', tld: 'io', mode: 'adult', category: 'games', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'naughtyknowledge.co', tld: 'co', mode: 'adult', category: 'humor', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'riskybiz.fun', tld: 'fun', mode: 'adult', category: 'humor', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'cheekymatches.io', tld: 'io', mode: 'adult', category: 'dating', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'racyriddles.com', tld: 'com', mode: 'adult', category: 'games', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'spicyswipes.co', tld: 'co', mode: 'adult', category: 'dating', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'hotshots.io', tld: 'io', mode: 'adult', category: 'nightlife', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'friskyfinds.com', tld: 'com', mode: 'adult', category: 'dating', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'edgyemoji.co', tld: 'co', mode: 'adult', category: 'humor', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'nightowl.fun', tld: 'fun', mode: 'adult', category: 'nightlife', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'barscene.co', tld: 'co', mode: 'adult', category: 'nightlife', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'naughtynerd.io', tld: 'io', mode: 'adult', category: 'humor', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
-  { domain: 'adultquiz.io', tld: 'io', mode: 'adult', category: 'games', difficulty: 'medium', availability_status: 'available', last_checked_at: null, source: 'seed' },
+  // ── ADULT ─────────────────────────────────────────────────────────────────
+  ...TAKEN_ADULT,
+  ...crossJoin(
+    ADULT_A, ADULT_B,
+    ['com', 'net', 'io', 'org'],
+    'adult',
+    ['adult', 'dating', 'humor', 'nightlife', 'games'],
+    'available',
+  ),
 ];
 
 // ---------------------------------------------------------------------------
@@ -202,13 +468,17 @@ async function main() {
     console.log(`[seed] Using built-in seed data (${records.length} records)`);
   }
 
-  // Filter out unknown availability unless explicitly seeding them
   const toInsert = records.filter((r) => r.availability_status !== 'unknown');
   console.log(`[seed] Inserting ${toInsert.length} records (${records.length - toInsert.length} unknown skipped)`);
 
   if (dryRun) {
     console.log('[seed] DRY RUN — no changes written to Supabase.');
     console.log('[seed] Sample:', JSON.stringify(toInsert[0], null, 2));
+    const counts: Record<string, number> = {};
+    for (const r of toInsert) {
+      counts[r.mode] = (counts[r.mode] ?? 0) + 1;
+    }
+    console.log('[seed] Counts per mode:', counts);
     return;
   }
 
@@ -219,7 +489,7 @@ async function main() {
   for (let i = 0; i < toInsert.length; i += BATCH) {
     const batch = toInsert.slice(i, i + BATCH);
     const { error } = await supabase
-      .from('domains')
+      .from('game_domains')
       .upsert(batch, { onConflict: 'domain,mode', ignoreDuplicates: false });
 
     if (error) {
@@ -231,7 +501,7 @@ async function main() {
   }
 
   console.log(`\n[seed] Done. Upserted: ${inserted}, Errors: ${skipped}`);
-  console.log('[seed] Your domain pool is ready for the game. 🎣');
+  console.log('[seed] Your domain pool is ready for the game.');
 }
 
 main().catch((err) => {

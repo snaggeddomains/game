@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Domain, AvailabilityStatus, RoundResult, GameMode } from '@/lib/types';
-import { MODE_CONFIG, TOTAL_ROUNDS, POINTS_PER_CORRECT } from '@/lib/types';
+import { MODE_CONFIG, TOTAL_ROUNDS, POINTS_PER_CORRECT, namecheapUrl } from '@/lib/types';
 import SnaggedLogo from './SnaggedLogo';
 
 interface Props {
@@ -13,6 +13,8 @@ interface Props {
 
 type Phase = 'guessing' | 'reveal';
 
+const TIMER_SECONDS = 10;
+
 export default function GameBoard({ domains, mode, onComplete }: Props) {
   const [roundIndex, setRoundIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>('guessing');
@@ -22,6 +24,7 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
   const [maxStreak, setMaxStreak] = useState(0);
   const [playerGuess, setPlayerGuess] = useState<AvailabilityStatus | null>(null);
   const [cardKey, setCardKey] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
 
   const domain = domains[roundIndex];
   const isLastRound = roundIndex === TOTAL_ROUNDS - 1;
@@ -29,6 +32,7 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
 
   useEffect(() => {
     setCardKey((k) => k + 1);
+    setTimeLeft(TIMER_SECONDS);
   }, [roundIndex]);
 
   const handleGuess = useCallback(
@@ -52,9 +56,19 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
     [phase, domain, streak, maxStreak]
   );
 
+  const handleTimeout = useCallback(() => {
+    if (phase !== 'guessing') return;
+    setPlayerGuess(null);
+    setPhase('reveal');
+    setStreak(0);
+    setRounds((prev) => [
+      ...prev,
+      { domain, player_guess: 'unknown', correct: false, points: 0 },
+    ]);
+  }, [phase, domain]);
+
   const handleNext = useCallback(() => {
     if (isLastRound) {
-      // Use functional updater so we get the latest rounds without a stale closure
       setRounds((latest) => {
         onComplete(latest, score, maxStreak);
         return latest;
@@ -65,6 +79,17 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
     setPhase('guessing');
     setPlayerGuess(null);
   }, [isLastRound, score, maxStreak, onComplete]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (phase !== 'guessing') return;
+    if (timeLeft <= 0) {
+      handleTimeout();
+      return;
+    }
+    const t = setTimeout(() => setTimeLeft((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [phase, timeLeft, handleTimeout]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -81,6 +106,10 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
 
   const progress = ((roundIndex + (phase === 'reveal' ? 1 : 0)) / TOTAL_ROUNDS) * 100;
   const streakFires = streak >= 2 ? '🔥'.repeat(Math.min(streak, 5)) : '';
+
+  const whoisDate = domain.registered_at
+    ? new Date(domain.registered_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+    : null;
 
   return (
     <div className="flex min-h-screen flex-col bg-game-bg">
@@ -108,7 +137,7 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
         </div>
       </header>
 
-      {/* Progress bar (teal water fill) */}
+      {/* Progress bar */}
       <div className="h-1.5 bg-game-border">
         <div
           className="h-full bg-brand-teal transition-all duration-500"
@@ -126,25 +155,32 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
               <span className="font-black text-brand-navy">{roundIndex + 1}</span>
               <span className="text-brand-navy/30"> / {TOTAL_ROUNDS}</span>
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {streakFires && (
                 <span className="flex items-center gap-1 text-sm sm:hidden">
                   <span className="text-brand-navy/40 text-xs">Streak</span>
                   <span>{streakFires}</span>
                 </span>
               )}
-              {domain.difficulty && (
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    domain.difficulty === 'easy'
-                      ? 'bg-slate-100 text-slate-500'
-                      : domain.difficulty === 'hard'
-                      ? 'bg-red-100 text-red-600'
-                      : 'bg-amber-100 text-amber-700'
-                  }`}
-                >
-                  {domain.difficulty}
-                </span>
+              {phase === 'guessing' && (
+                <svg width="36" height="36" viewBox="0 0 36 36" aria-label={`${timeLeft} seconds remaining`}>
+                  <circle cx="18" cy="18" r="15" fill="none" stroke="#E5E7EB" strokeWidth="3" />
+                  <circle
+                    cx="18" cy="18" r="15"
+                    fill="none"
+                    stroke={timeLeft <= 3 ? '#F43F5E' : '#7EC8D8'}
+                    strokeWidth="3"
+                    strokeDasharray={`${2 * Math.PI * 15}`}
+                    strokeDashoffset={`${2 * Math.PI * 15 * (1 - timeLeft / TIMER_SECONDS)}`}
+                    strokeLinecap="round"
+                    transform="rotate(-90 18 18)"
+                    style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.3s' }}
+                  />
+                  <text x="18" y="23" textAnchor="middle" fontSize="12" fontWeight="bold"
+                    fill={timeLeft <= 3 ? '#F43F5E' : '#1B3553'}>
+                    {timeLeft}
+                  </text>
+                </svg>
               )}
             </div>
           </div>
@@ -175,10 +211,10 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
                     correct ? 'text-brand-teal' : 'text-red-600'
                   }`}
                 >
-                  {correct ? `+${POINTS_PER_CORRECT} pts!` : 'Not quite!'}
+                  {correct ? `+${POINTS_PER_CORRECT} pts!` : playerGuess === null ? 'Time\'s up!' : 'Not quite!'}
                 </div>
                 <div className="mt-1 text-sm font-medium text-brand-navy/60">
-                  It was{' '}
+                  {domain.availability_status === 'available' ? 'It is' : 'It was'}{' '}
                   <span
                     className={
                       domain.availability_status === 'taken'
@@ -189,6 +225,11 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
                     {domain.availability_status === 'taken' ? '🔒 Snagged' : '✅ Available'}
                   </span>
                 </div>
+                {domain.availability_status === 'taken' && (
+                  <div className="mt-2 text-xs font-semibold text-brand-navy/60">
+                    {whoisDate ? `Registered ${whoisDate}` : 'Registration date unknown'}
+                  </div>
+                )}
               </div>
             )}
 
@@ -217,11 +258,6 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
               >
                 {domain.domain}
               </p>
-              {domain.category && (
-                <span className="mt-5 rounded-full bg-game-bg px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-navy/40">
-                  {domain.category}
-                </span>
-              )}
             </div>
           </div>
 
@@ -251,13 +287,25 @@ export default function GameBoard({ domains, mode, onComplete }: Props) {
                 </button>
               </>
             ) : (
-              <button
-                onClick={handleNext}
-                className="btn-coral col-span-2 py-4 text-base"
-                autoFocus
-              >
-                {isLastRound ? 'See Results →' : 'Next Round →'}
-              </button>
+              <div className="col-span-2 flex flex-col gap-2">
+                <button
+                  onClick={handleNext}
+                  className="btn-coral w-full py-4 text-base"
+                  autoFocus
+                >
+                  {isLastRound ? 'See Results →' : 'Next Domain →'}
+                </button>
+                {domain.availability_status === 'available' && (
+                  <a
+                    href={namecheapUrl(domain.domain)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full rounded-xl border border-brand-teal/40 py-2.5 text-center text-sm font-semibold text-brand-teal transition-colors hover:border-brand-teal hover:bg-brand-teal/5"
+                  >
+                    Register It →
+                  </a>
+                )}
+              </div>
             )}
           </div>
 

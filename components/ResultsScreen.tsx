@@ -1,9 +1,11 @@
 'use client';
 
 import type { RoundResult, GameMode } from '@/lib/types';
-import { TOTAL_ROUNDS, POINTS_PER_CORRECT, MODE_CONFIG } from '@/lib/types';
+import { TOTAL_ROUNDS, POINTS_PER_CORRECT, MODE_CONFIG, namecheapUrl } from '@/lib/types';
 import SnaggedLogo from './SnaggedLogo';
 import EmailCapture from './EmailCapture';
+import LeaderboardPrompt from './LeaderboardPrompt';
+import LeaderboardProgress from './LeaderboardProgress';
 
 interface Props {
   rounds: RoundResult[];
@@ -32,6 +34,14 @@ export default function ResultsScreen({ rounds, score, maxStreak, mode, onPlayAg
     <div className="flex min-h-screen flex-col bg-game-bg">
       {/* Result hero — salmon header */}
       <div className="relative bg-brand-salmon pb-16 pt-10 text-center">
+        <div className="mb-4 text-center">
+          <a
+            href="https://www.snagged.com"
+            className="text-xs font-semibold text-brand-navy/40 hover:text-brand-navy/70 transition-colors"
+          >
+            ← Back to Snagged.com
+          </a>
+        </div>
         <SnaggedLogo size="sm" className="mb-6 justify-center" />
 
         <div className="mb-2 text-6xl">{rating.emoji}</div>
@@ -100,6 +110,16 @@ export default function ResultsScreen({ rounds, score, maxStreak, mode, onPlayAg
                   >
                     {r.domain.availability_status === 'taken' ? '🔒 Snagged' : '✅ Available'}
                   </span>
+                  {r.domain.availability_status === 'available' && (
+                    <a
+                      href={namecheapUrl(r.domain.domain)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hidden rounded-full bg-brand-navy px-2 py-0.5 text-xs font-semibold text-white hover:bg-brand-teal transition-colors sm:inline"
+                    >
+                      Register →
+                    </a>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   {r.correct ? (
@@ -115,6 +135,12 @@ export default function ResultsScreen({ rounds, score, maxStreak, mode, onPlayAg
             ))}
           </div>
         </div>
+
+        {/* Leaderboard prompt (shown once to new players) */}
+        <LeaderboardPrompt />
+
+        {/* Progress nudge for registered players */}
+        <LeaderboardProgress />
 
         {/* Email capture */}
         <div className="mb-6">

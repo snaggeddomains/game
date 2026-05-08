@@ -3,50 +3,72 @@ import { supabase } from '@/lib/supabase';
 import type { GameMode } from '@/lib/types';
 import { TOTAL_ROUNDS } from '@/lib/types';
 
+const TAKEN_PER_ROUND = Math.ceil(TOTAL_ROUNDS * 0.4);    // 4 taken
+const AVAILABLE_PER_ROUND = TOTAL_ROUNDS - TAKEN_PER_ROUND; // 6 available
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const mode = searchParams.get('mode') as GameMode | null;
 
-  const validModes: GameMode[] = ['regular', 'kid_friendly', 'founder', 'adult'];
+  const validModes: GameMode[] = ['regular', 'kid_friendly', 'adult'];
   if (!mode || !validModes.includes(mode)) {
     return NextResponse.json({ error: 'Invalid or missing mode parameter.' }, { status: 400 });
   }
 
-  // Fetch a pool larger than needed, then randomly slice — avoids ORDER BY RANDOM() being slow at scale
-  const { data, error } = await supabase
-    .from('domains')
-    .select('*')
-    .eq('mode', mode)
-    .in('availability_status', ['available', 'taken'])
-    .limit(60);
+  // Fetch taken and available separately so we always guarantee a balanced mix.
+  // Random offset into the full pool ensures variety across sessions.
+  async function fetchPool(status: 'taken' | 'available', need: number) {
+    let countQ = supabase
+      .from('game_domains')
+      .select('*', { count: 'exact', head: true })
+      .eq('mode', mode!)
+      .eq('availability_status', status);
 
-  if (error) {
-    console.error('Supabase error fetching domains:', error);
+    if (status === 'taken') countQ = countQ.not('registered_at', 'is', null);
+
+    const { count } = await countQ;
+
+    const total = count ?? 0;
+    const fetchSize = Math.min(need * 4, total);
+    const maxOffset = Math.max(0, total - fetchSize);
+    const offset = Math.floor(Math.random() * maxOffset);
+
+    let q = supabase
+      .from('game_domains')
+      .select('*')
+      .eq('mode', mode!)
+      .eq('availability_status', status);
+
+    // Taken domains must have a registration date
+    if (status === 'taken') q = q.not('registered_at', 'is', null);
+
+    const { data, error } = await q.range(offset, offset + fetchSize - 1);
+
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  }
+
+  try {
+    const [takenPool, availablePool] = await Promise.all([
+      fetchPool('taken', TAKEN_PER_ROUND),
+      fetchPool('available', AVAILABLE_PER_ROUND),
+    ]);
+
+    const shuffle = <T>(arr: T[]) => arr.sort(() => Math.random() - 0.5);
+
+    const taken = shuffle(takenPool).slice(0, TAKEN_PER_ROUND);
+    const available = shuffle(availablePool).slice(0, AVAILABLE_PER_ROUND);
+
+    if (taken.length + available.length < TOTAL_ROUNDS) {
+      return NextResponse.json(
+        { error: `Not enough domains in the pool for mode "${mode}". Run the seed script first.` },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ domains: shuffle([...taken, ...available]) });
+  } catch (err) {
+    console.error('Error fetching domains:', err);
     return NextResponse.json({ error: 'Failed to fetch domains.' }, { status: 500 });
   }
-
-  if (!data || data.length < TOTAL_ROUNDS) {
-    return NextResponse.json(
-      { error: `Not enough domains in the pool for mode "${mode}". Run the seed script first.` },
-      { status: 404 }
-    );
-  }
-
-  // Ensure a balanced mix: at least ~40% of each status
-  const taken = data.filter((d) => d.availability_status === 'taken');
-  const available = data.filter((d) => d.availability_status === 'available');
-
-  const shuffle = <T>(arr: T[]) => arr.sort(() => Math.random() - 0.5);
-
-  const takenCount = Math.min(Math.ceil(TOTAL_ROUNDS * 0.5), taken.length);
-  const availableCount = TOTAL_ROUNDS - takenCount;
-
-  const selected = [
-    ...shuffle(taken).slice(0, takenCount),
-    ...shuffle(available).slice(0, availableCount),
-  ];
-
-  const domains = shuffle(selected).slice(0, TOTAL_ROUNDS);
-
-  return NextResponse.json({ domains });
 }

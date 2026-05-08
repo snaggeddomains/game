@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createServiceClient } from '@/lib/supabase';
 import type { GameMode, RoundResult } from '@/lib/types';
 
 interface GameResultPayload {
@@ -7,6 +7,7 @@ interface GameResultPayload {
   score: number;
   max_streak: number;
   rounds: RoundResult[];
+  player_id?: string | null;
 }
 
 export async function POST(req: NextRequest) {
@@ -17,21 +18,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
   }
 
-  const { mode, score, max_streak, rounds } = body;
+  const { mode, score, max_streak, rounds, player_id } = body;
 
   if (!mode || typeof score !== 'number' || !Array.isArray(rounds)) {
     return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
   }
 
+  const supabase = createServiceClient();
+
   const correctCount = rounds.filter((r) => r.correct).length;
   const accuracy = rounds.length > 0 ? (correctCount / rounds.length) * 100 : 0;
 
-  // Save anonymised aggregate result
+  // Save aggregate result (with optional player linkage)
   const { error: resultError } = await supabase.from('game_results').insert({
     mode,
     score,
     max_streak,
     accuracy: Math.round(accuracy * 100) / 100,
+    ...(player_id ? { player_id } : {}),
   });
 
   if (resultError) {
@@ -53,7 +57,7 @@ export async function POST(req: NextRequest) {
   // Upsert in parallel (best-effort; don't fail the response on analytics errors)
   await Promise.allSettled(
     updates.map(({ id, ...rest }) =>
-      supabase.from('domains').update(rest).eq('id', id)
+      supabase.from('game_domains').update(rest).eq('id', id)
     )
   );
 
