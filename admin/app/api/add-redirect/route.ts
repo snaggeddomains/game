@@ -49,7 +49,6 @@ async function upsertRedirectRuleset(zoneId: string, destinationUrl: string) {
   const existing = await getRes.json();
 
   if (existing.success && existing.result?.id) {
-    // PUT replaces the entire ruleset
     const putRes = await fetch(`${CF_API}/zones/${zoneId}/rulesets/${existing.result.id}`, {
       method: 'PUT',
       headers: cfHeaders(),
@@ -58,7 +57,6 @@ async function upsertRedirectRuleset(zoneId: string, destinationUrl: string) {
     const putData = await putRes.json();
     if (!putData.success) throw new Error(putData.errors?.[0]?.message ?? 'Failed to update ruleset');
   } else {
-    // Create the entrypoint ruleset
     const postRes = await fetch(phasePath, {
       method: 'PUT',
       headers: cfHeaders(),
@@ -118,8 +116,8 @@ export async function POST(req: NextRequest) {
       newlyCreated,
       nameServers,
       message: newlyCreated
-        ? `Zone created. Update nameservers at your registrar to activate the redirect.`
-        : `Redirect rule updated successfully.`,
+        ? 'Zone created. Update nameservers at your registrar to activate the redirect.'
+        : 'Redirect rule updated successfully.',
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';

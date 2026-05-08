@@ -23,7 +23,7 @@ export default function AdminPage() {
     setLoading(true);
     setResult(null);
 
-    const res = await fetch('/game/api/admin/add-redirect', {
+    const res = await fetch('/api/add-redirect', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ domain, destinationUrl }),
@@ -40,19 +40,23 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-game-bg p-6">
+    <div className="min-h-screen p-6">
       <div className="max-w-lg mx-auto">
-        <h1 className="font-display text-3xl text-brand-navy mb-8">Admin</h1>
+        <h1 className="text-3xl font-bold mb-8" style={{ color: 'var(--navy)' }}>
+          Snagged Admin
+        </h1>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-game-border p-6">
-          <h2 className="text-lg font-semibold text-brand-navy mb-4">Add Domain Redirect</h2>
-          <p className="text-sm text-game-muted mb-6">
+        <div className="bg-white rounded-2xl shadow-sm p-6" style={{ border: '1px solid var(--border)' }}>
+          <h2 className="text-lg font-semibold mb-2" style={{ color: 'var(--navy)' }}>
+            Add Domain Redirect
+          </h2>
+          <p className="text-sm mb-6" style={{ color: 'var(--muted)' }}>
             Creates or updates a Cloudflare 301 redirect for the given domain.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-brand-navy mb-1">
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--navy)' }}>
                 Domain
               </label>
               <input
@@ -60,13 +64,14 @@ export default function AdminPage() {
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
                 placeholder="foal.com"
-                className="w-full border border-game-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                style={{ border: '1px solid var(--border)' }}
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-brand-navy mb-1">
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--navy)' }}>
                 Destination URL
               </label>
               <input
@@ -74,7 +79,8 @@ export default function AdminPage() {
                 value={destinationUrl}
                 onChange={(e) => setDestinationUrl(e.target.value)}
                 placeholder="https://www.snagged.com/domains/foal-com"
-                className="w-full border border-game-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                className="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                style={{ border: '1px solid var(--border)' }}
                 required
               />
             </div>
@@ -82,7 +88,8 @@ export default function AdminPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-brand-navy text-white rounded-lg py-2 text-sm font-medium hover:bg-brand-teal transition-colors disabled:opacity-50"
+              className="w-full rounded-lg py-2 text-sm font-medium text-white transition-opacity disabled:opacity-50"
+              style={{ background: 'var(--navy)' }}
             >
               {loading ? 'Setting up redirect…' : 'Create Redirect'}
             </button>
@@ -90,17 +97,19 @@ export default function AdminPage() {
 
           {result && (
             <div
-              className={`mt-6 rounded-lg p-4 text-sm ${
-                result.ok
-                  ? 'bg-blue-50 border border-blue-200 text-blue-800'
-                  : 'bg-red-50 border border-red-200 text-red-800'
-              }`}
+              className="mt-6 rounded-lg p-4 text-sm"
+              style={{
+                background: result.ok ? '#eff6ff' : '#fef2f2',
+                border: `1px solid ${result.ok ? '#bfdbfe' : '#fecaca'}`,
+                color: result.ok ? '#1e40af' : '#991b1b',
+              }}
             >
               {result.ok ? (
                 <>
                   <p className="font-medium mb-1">{result.message}</p>
                   <p>
-                    <span className="font-medium">{result.domain}</span> →{' '}
+                    <span className="font-medium">{result.domain}</span>
+                    {' → '}
                     <span className="break-all">{result.destinationUrl}</span>
                   </p>
                   {result.newlyCreated && result.nameServers && (
