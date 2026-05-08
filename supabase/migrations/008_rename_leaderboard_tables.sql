@@ -15,5 +15,5 @@ create or replace view public.game_leaderboard as
   from public.game_leaderboard_players p
   join public.game_results gr on gr.player_id = p.id
   group by p.id, p.display_name
-  having count(gr.id) >= 3
+  having count(gr.id) >= 10
   order by avg_accuracy desc;

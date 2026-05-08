@@ -58,7 +58,7 @@ export default function LeaderboardPrompt({ onRegistered }: Props) {
         <div>
           <p className="font-bold text-brand-navy">You&rsquo;re on the leaderboard!</p>
           <p className="text-sm text-brand-navy/60">
-            Play 3 sessions (30 answers total) to qualify for the rankings.
+            Play 10 sessions (100 answers total) to qualify for the rankings.
           </p>
         </div>
       </div>
@@ -73,7 +73,7 @@ export default function LeaderboardPrompt({ onRegistered }: Props) {
       </div>
       <p className="mb-4 text-sm text-brand-navy/60">
         Enter your name and email to qualify for the leaderboard. You need at least{' '}
-        <span className="font-semibold text-brand-navy">30 answers</span> (3 sessions) to appear in the rankings.
+        <span className="font-semibold text-brand-navy">100 answers</span> (10 sessions) to appear in the rankings.
       </p>
       <form onSubmit={handleSubmit} className="flex flex-col gap-2">
         <input
