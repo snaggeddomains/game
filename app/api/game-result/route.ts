@@ -30,13 +30,13 @@ export async function POST(req: NextRequest) {
   const accuracy = rounds.length > 0 ? (correctCount / rounds.length) * 100 : 0;
 
   // Save aggregate result (with optional player linkage)
-  const { error: resultError } = await supabase.from('game_results').insert({
+  const { data: resultRow, error: resultError } = await supabase.from('game_results').insert({
     mode,
     score,
     max_streak,
     accuracy: Math.round(accuracy * 100) / 100,
     ...(player_id ? { player_id } : {}),
-  });
+  }).select('id').single();
 
   if (resultError) {
     console.error('Error saving game result:', resultError);
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     )
   );
 
-  return NextResponse.json({ ok: true, accuracy });
+  return NextResponse.json({ ok: true, accuracy, result_id: resultRow?.id ?? null });
 }
 
 function computeNewRate(

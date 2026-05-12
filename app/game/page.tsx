@@ -10,7 +10,6 @@ function LoadingScreen() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-game-bg">
       <div className="flex items-center gap-2">
-        {/* Animated wave dots matching brand palette */}
         {['#7EC8D8', '#2E7FA5', '#1B3553'].map((color, i) => (
           <span
             key={i}
@@ -95,7 +94,7 @@ export default function GamePage() {
         // Always increment so the count is accurate when they later register
         const prev = parseInt(localStorage.getItem('lbGamesPlayed') ?? '0', 10);
         localStorage.setItem('lbGamesPlayed', String(prev + 1));
-        await fetch('/api/game-result', {
+        const res = await fetch('/api/game-result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -106,6 +105,10 @@ export default function GamePage() {
             player_id: playerId,
           }),
         });
+        const data = await res.json();
+        if (data.result_id) {
+          localStorage.setItem('lbLastResultId', data.result_id);
+        }
       } catch {
         // analytics failure is non-blocking
       }

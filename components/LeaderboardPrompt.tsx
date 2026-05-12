@@ -10,7 +10,7 @@ interface Props {
 }
 
 export default function LeaderboardPrompt({ onRegistered }: Props) {
-  const [seen, setSeen] = useState(true); // default true to avoid flash
+  const [seen, setSeen] = useState(true);
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -32,10 +32,11 @@ export default function LeaderboardPrompt({ onRegistered }: Props) {
     setErrorMsg('');
 
     try {
+      const lastResultId = localStorage.getItem('lbLastResultId') ?? null;
       const res = await fetch('/api/player', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ display_name: displayName.trim(), email: email.trim() }),
+        body: JSON.stringify({ display_name: displayName.trim(), email: email.trim(), result_id: lastResultId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Something went wrong.');
@@ -58,7 +59,7 @@ export default function LeaderboardPrompt({ onRegistered }: Props) {
         <div>
           <p className="font-bold text-brand-navy">You&rsquo;re on the leaderboard!</p>
           <p className="text-sm text-brand-navy/60">
-            Complete 1 session (10 answers) to qualify for the rankings.
+            Your first session is counted. Keep playing to climb the rankings!
           </p>
         </div>
       </div>
