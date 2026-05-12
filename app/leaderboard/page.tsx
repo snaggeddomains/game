@@ -42,7 +42,7 @@ export default function LeaderboardPage() {
           Leaderboard
         </h1>
         <p className="mt-2 text-sm font-medium text-brand-navy/60">
-          Top players ranked by accuracy &mdash; 100 answers minimum to qualify
+          Top players ranked by accuracy &mdash; complete 1 session to qualify
         </p>
 
         {/* Wave */}
@@ -67,7 +67,7 @@ export default function LeaderboardPage() {
             <div className="mb-3 text-5xl">🎣</div>
             <p className="font-bold text-brand-navy">No one on the board yet.</p>
             <p className="mt-1 text-sm text-brand-navy/60">
-              Play 10 sessions and join the leaderboard to be first!
+              Complete 1 session and join the leaderboard to be first!
             </p>
           </div>
         )}
