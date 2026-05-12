@@ -92,10 +92,9 @@ export default function GamePage() {
       // Fire-and-forget analytics
       try {
         const playerId = localStorage.getItem('lbPlayerId') ?? null;
-        if (playerId) {
-          const prev = parseInt(localStorage.getItem('lbGamesPlayed') ?? '0', 10);
-          localStorage.setItem('lbGamesPlayed', String(prev + 1));
-        }
+        // Always increment so the count is accurate when they later register
+        const prev = parseInt(localStorage.getItem('lbGamesPlayed') ?? '0', 10);
+        localStorage.setItem('lbGamesPlayed', String(prev + 1));
         await fetch('/api/game-result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
