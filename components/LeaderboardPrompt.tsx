@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 const LS_SEEN_KEY = 'lbPromptSeen';
 const LS_PLAYER_KEY = 'lbPlayerId';
@@ -59,7 +60,10 @@ export default function LeaderboardPrompt({ onRegistered }: Props) {
         <div>
           <p className="font-bold text-brand-navy">You&rsquo;re on the leaderboard!</p>
           <p className="text-sm text-brand-navy/60">
-            Your first session is counted. Keep playing to climb the rankings!
+            Your first session is counted. Keep playing to climb the rankings!{' '}
+            <Link href="/leaderboard" className="font-semibold text-brand-teal hover:underline">
+              Check it out →
+            </Link>
           </p>
         </div>
       </div>
