@@ -23,6 +23,17 @@ export default {
         available: '#2E7FA5',  // teal — "Available"
         correct: '#2E7FA5',
         wrong: '#C0392B',
+        // South Orange palette
+        so: {
+          green:      '#2D5016',  // deep forest green — primary brand
+          greenLight: '#4A7A28',  // lighter green for hover
+          cream:      '#FAF8F3',  // warm page background
+          amber:      '#C49A2E',  // gold accent
+          amberLight: '#E8BE5A',
+          slate:      '#1A2332',  // dark text
+          muted:      '#6B7280',  // secondary text
+          border:     '#E5DDD0',  // card borders
+        },
         // Surfaces
         game: {
           bg: '#FAF3EC',       // warm cream page bg
