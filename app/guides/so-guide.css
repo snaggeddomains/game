@@ -1,0 +1,89 @@
+/* South Orange guide pages — responsive & spacing */
+
+.so-nav-links {
+  display: flex;
+  gap: 24px;
+}
+
+.so-photo-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 40px;
+}
+
+.so-school-row {
+  display: flex;
+  gap: 20px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px 20px;
+  border: 1px solid #E5DDD0;
+}
+
+.so-school-label {
+  min-width: 90px;
+  font-size: 11px;
+  color: #2D5016;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-top: 2px;
+  flex-shrink: 0;
+}
+
+.so-transit-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px 18px;
+  border: 1px solid #E5DDD0;
+}
+
+/* ── Tighter card grids ── */
+.so-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+  .so-nav-links {
+    display: none !important;
+  }
+
+  .so-photo-strip {
+    grid-template-columns: 1fr !important;
+    margin-bottom: 28px;
+  }
+
+  .so-photo-strip img {
+    height: 200px !important;
+  }
+
+  .so-school-row {
+    flex-direction: column !important;
+    gap: 6px !important;
+    padding: 14px 16px !important;
+  }
+
+  .so-school-label {
+    min-width: auto !important;
+  }
+
+  .so-transit-card {
+    padding: 14px 16px !important;
+  }
+
+  .so-card-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .so-photo-strip {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}

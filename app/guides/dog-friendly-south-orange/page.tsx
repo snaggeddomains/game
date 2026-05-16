@@ -1,3 +1,5 @@
+import '../so-guide.css';
+
 export const metadata = {
   title: 'Dog-Friendly South Orange, NJ | Complete Guide for Dog Owners | SouthOrange.com',
   description:

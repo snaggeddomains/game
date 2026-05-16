@@ -1,3 +1,5 @@
+import '../so-guide.css';
+
 export const metadata = {
   title: 'South Orange, NJ with Kids | Family Guide | SouthOrange.com',
   description:

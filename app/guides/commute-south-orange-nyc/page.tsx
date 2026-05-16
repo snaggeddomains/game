@@ -1,3 +1,5 @@
+import '../so-guide.css';
+
 export const metadata = {
   title: 'Commuting from South Orange to NYC | NJ Transit Guide | SouthOrange.com',
   description:
@@ -82,7 +84,7 @@ export default function CommutePage() {
           <a href="/" style={{ color: GOLD, fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 18, textDecoration: 'none' }}>
             SouthOrange.com
           </a>
-          <div style={{ display: 'flex', gap: 24 }}>
+          <div className="so-nav-links">
             <a href="/guides/moving-to" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Moving Here</a>
             <a href="/guides/neighborhoods" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Neighborhoods</a>
             <a href="/" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Home</a>

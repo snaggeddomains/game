@@ -1,3 +1,5 @@
+import '../so-guide.css';
+
 export const metadata = {
   title: 'Things To Do in South Orange, NJ | Complete Activity Guide | SouthOrange.com',
   description:
@@ -74,7 +76,7 @@ export default function ThingsToDoGuide() {
           <a href="/" style={{ color: GOLD, fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 18, textDecoration: 'none' }}>
             SouthOrange.com
           </a>
-          <div style={{ display: 'flex', gap: 24 }}>
+          <div className="so-nav-links">
             <a href="/guides/restaurants" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Eat & Drink</a>
             <a href="/guides/moving-to" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Moving Here</a>
             <a href="/" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Home</a>
@@ -103,7 +105,7 @@ export default function ThingsToDoGuide() {
           </p>
 
           {/* Photo strip */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 48, borderRadius: 12, overflow: 'hidden' }}>
+          <div className="so-photo-strip">
             <img src="/reservation.jpeg" alt="South Mountain Reservation" style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
             <img src="/sopac.jpg" alt="SOPAC South Orange Performing Arts Center" style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
             <img src="/floods_hill.jpeg" alt="Flood's Hill concerts South Orange" style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />

@@ -1,3 +1,5 @@
+import '../so-guide.css';
+
 export const metadata = {
   title: 'Moving to South Orange NJ | Complete Relocation Guide | SouthOrange.com',
   description:
@@ -74,7 +76,7 @@ export default function MovingToGuide() {
           <a href="/" style={{ color: GOLD, fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 18, textDecoration: 'none' }}>
             SouthOrange.com
           </a>
-          <div style={{ display: 'flex', gap: 24 }}>
+          <div className="so-nav-links">
             <a href="/guides/things-to-do" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Things To Do</a>
             <a href="/guides/restaurants" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Restaurants</a>
             <a href="/" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Home</a>
@@ -98,7 +100,7 @@ export default function MovingToGuide() {
         <main style={{ maxWidth: 860, margin: '0 auto', padding: '48px 24px 80px' }}>
 
           {/* Photo strip */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 40, borderRadius: 12, overflow: 'hidden' }}>
+          <div className="so-photo-strip">
             <img src="/sign.jpg" alt="South Orange, NJ sign" style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
             <img src="/SO_ave.jpeg" alt="South Orange Avenue" style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
             <img src="/fire_station.jpeg" alt="South Orange neighborhood" style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
@@ -235,8 +237,8 @@ export default function MovingToGuide() {
                   desc: 'Division I university on the South Orange border with 10,000+ undergraduate and graduate students. Adds college-town energy and some of the best dining options in town.',
                 },
               ].map((s) => (
-                <div key={s.name} style={{ background: '#FFFFFF', borderRadius: 10, padding: '18px 24px', border: `1px solid ${STONE}`, display: 'flex', gap: 20 }}>
-                  <div style={{ minWidth: 90, fontSize: 12, color: DARK_GREEN, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, paddingTop: 2, flexShrink: 0 }}>
+                <div key={s.name} className="so-school-row">
+                  <div className="so-school-label">
                     {s.type}
                   </div>
                   <div>

@@ -1,3 +1,5 @@
+import '../so-guide.css';
+
 export const metadata = {
   title: 'Is South Orange, NJ Safe? An Honest Guide for Families | SouthOrange.com',
   description:
@@ -113,7 +115,7 @@ export default function IsSouthOrangeSafePage() {
           <a href="/" style={{ color: GOLD, fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 18, textDecoration: 'none', letterSpacing: '-0.3px' }}>
             SouthOrange.com
           </a>
-          <div style={{ display: 'flex', gap: 24 }}>
+          <div className="so-nav-links">
             <a href="/guides" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Guides</a>
             <a href="/south-orange" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Home</a>
           </div>
