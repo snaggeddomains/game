@@ -95,12 +95,19 @@ export default function ThingsToDoGuide() {
         <main style={{ maxWidth: 860, margin: '0 auto', padding: '48px 24px 80px' }}>
 
           {/* Intro */}
-          <p style={{ fontSize: 17, lineHeight: 1.85, color: TEXT, marginBottom: 48, marginTop: 0 }}>
+          <p style={{ fontSize: 17, lineHeight: 1.85, color: TEXT, marginBottom: 32, marginTop: 0 }}>
             South Orange is unusually dense with things to do for a town of 16,000 people. A world-class performing
             arts center, 2,110 acres of preserved forest, a free Olympic-size pool for residents, a walkable downtown,
             and a genuine farmers market — all within a few minutes of the train station. Most residents barely scratch
             the surface of what&rsquo;s here.
           </p>
+
+          {/* Photo strip */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 48, borderRadius: 12, overflow: 'hidden' }}>
+            <img src="/reservation.jpeg" alt="South Mountain Reservation" style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
+            <img src="/sopac.jpg" alt="SOPAC South Orange Performing Arts Center" style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
+            <img src="/floods_hill.jpeg" alt="Flood's Hill concerts South Orange" style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
+          </div>
 
           {/* ── South Mountain Reservation ── */}
           <section style={{ marginBottom: 56 }}>
@@ -285,6 +292,11 @@ export default function ThingsToDoGuide() {
             </div>
           </section>
 
+          {/* Bunny's photo */}
+          <div style={{ marginBottom: 48, borderRadius: 12, overflow: 'hidden', border: `1px solid ${STONE}` }}>
+            <img src="/bunnys.jpeg" alt="South Orange dining" style={{ width: '100%', height: 200, objectFit: 'cover', display: 'block' }} />
+          </div>
+
           {/* ── Seton Hall Campus ── */}
           <section style={{ marginBottom: 56 }}>
             <div style={{ background: '#003087', borderRadius: '12px 12px 0 0', padding: '24px 28px' }}>
@@ -377,6 +389,11 @@ export default function ThingsToDoGuide() {
               ))}
             </div>
           </section>
+
+          {/* Alley/downtown photo */}
+          <div style={{ marginBottom: 48, borderRadius: 12, overflow: 'hidden', border: `1px solid ${STONE}` }}>
+            <img src="/so_alley.jpeg" alt="South Orange downtown alley" style={{ width: '100%', height: 220, objectFit: 'cover', display: 'block' }} />
+          </div>
 
           {/* ── Downtown ── */}
           <section style={{ marginBottom: 56 }}>

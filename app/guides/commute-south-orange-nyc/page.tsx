@@ -113,6 +113,11 @@ export default function CommutePage() {
             </p>
           </div>
 
+          {/* Station photo */}
+          <div style={{ marginBottom: 40, borderRadius: 12, overflow: 'hidden', border: `1px solid ${STONE}` }}>
+            <img src="/train_station.jpeg" alt="South Orange Train Station" style={{ width: '100%', height: 260, objectFit: 'cover', display: 'block' }} />
+          </div>
+
           {/* ── South Orange Station ── */}
           <section style={{ marginBottom: 56 }}>
             <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 28, fontWeight: 700, color: DARK_GREEN, margin: '0 0 20px' }}>
@@ -221,6 +226,14 @@ export default function CommutePage() {
               </p>
             </div>
           </section>
+
+          {/* Cafe photo — what you come home to */}
+          <div style={{ marginBottom: 48, borderRadius: 12, overflow: 'hidden', border: `1px solid ${STONE}` }}>
+            <img src="/cafe.jpg" alt="South Orange cafe" style={{ width: '100%', height: 200, objectFit: 'cover', display: 'block' }} />
+            <div style={{ background: '#FFFFFF', padding: '12px 16px', fontSize: 13, color: MUTED, fontStyle: 'italic' }}>
+              The commute ends here — coffee and a downtown worth walking home through.
+            </div>
+          </div>
 
           {/* ── Bus & Other Options ── */}
           <section style={{ marginBottom: 56 }}>

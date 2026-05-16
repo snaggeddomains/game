@@ -97,6 +97,13 @@ export default function MovingToGuide() {
 
         <main style={{ maxWidth: 860, margin: '0 auto', padding: '48px 24px 80px' }}>
 
+          {/* Photo strip */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 40, borderRadius: 12, overflow: 'hidden' }}>
+            <img src="/sign.jpg" alt="South Orange, NJ sign" style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
+            <img src="/SO_ave.jpeg" alt="South Orange Avenue" style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
+            <img src="/fire_station.jpeg" alt="South Orange neighborhood" style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
+          </div>
+
           {/* Intro */}
           <div style={{ background: '#FFFFFF', border: `1px solid ${STONE}`, borderLeft: `4px solid ${SAGE}`, borderRadius: 8, padding: '20px 24px', marginBottom: 48 }}>
             <p style={{ fontSize: 17, lineHeight: 1.85, color: TEXT, margin: 0 }}>
