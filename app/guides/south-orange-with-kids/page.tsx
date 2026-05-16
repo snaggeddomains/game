@@ -197,6 +197,20 @@ export default function SouthOrangeWithKidsPage() {
 
       <div style={{ backgroundColor: colors.bg, minHeight: '100vh', fontFamily: 'system-ui, sans-serif', color: colors.textDark }}>
 
+        {/* Nav */}
+        <nav style={{ background: colors.darkGreen, padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 56 }}>
+          <a href="/" style={{ color: colors.gold, fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 18, textDecoration: 'none' }}>
+            SouthOrange.com
+          </a>
+          <div className="so-nav-links">
+            <a href="/guides/restaurants" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Dining</a>
+            <a href="/guides/things-to-do" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Things To Do</a>
+            <a href="/guides/moving-to" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Moving Here</a>
+            <a href="/guides/compare-towns" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Compare Towns</a>
+            <a href="/" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Home</a>
+          </div>
+        </nav>
+
         {/* Hero */}
         <section
           style={{

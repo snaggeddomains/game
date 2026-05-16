@@ -116,8 +116,11 @@ export default function IsSouthOrangeSafePage() {
             SouthOrange.com
           </a>
           <div className="so-nav-links">
-            <a href="/guides" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Guides</a>
-            <a href="/south-orange" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Home</a>
+            <a href="/guides/restaurants" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Dining</a>
+            <a href="/guides/things-to-do" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Things To Do</a>
+            <a href="/guides/moving-to" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Moving Here</a>
+            <a href="/guides/compare-towns" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Compare Towns</a>
+            <a href="/" style={{ color: '#C8D9B0', fontSize: 14, textDecoration: 'none' }}>Home</a>
           </div>
         </nav>
 
