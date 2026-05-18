@@ -2,13 +2,12 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Is it Snagged? — The Domain Name Game',
-  description:
-    'Guess whether domain names are already taken or still available. Play in Regular, Kid Friendly, Founder, or Adult mode.',
+  title: 'Snagged Auctions — Premium Domain Auctions',
+  description: 'Buy and bid on premium domain names through Snagged Auctions. Transparent, trustworthy, broker-assisted.',
   openGraph: {
-    title: 'Is it Snagged?',
-    description: 'Can you tell which domains are taken? Find out at Snagged.com.',
-    siteName: 'Snagged',
+    title: 'Snagged Auctions',
+    description: 'Premium domain auctions — bid with confidence.',
+    siteName: 'Snagged Auctions',
   },
 };
 
