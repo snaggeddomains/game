@@ -1,4 +1,41 @@
-import { recentSales } from './recent-sales-data';
+import { createClient } from '@supabase/supabase-js';
+import { recentSales as manualSales } from './recent-sales-data';
+import type { RecentSale } from './recent-sales-data';
+
+async function getSales(): Promise<RecentSale[]> {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) return manualSales;
+
+  try {
+    const supabase = createClient(url, key);
+    const { data, error } = await supabase
+      .from('so_recent_sales')
+      .select('*')
+      .order('sale_date', { ascending: false })
+      .limit(20);
+    if (error || !data?.length) return manualSales;
+
+    return data.map(r => ({
+      id: r.id,
+      address: r.address,
+      salePrice: r.sale_price,
+      listPrice: r.list_price ?? r.sale_price,
+      saleDate: r.sale_date,
+      listedDate: r.listed_date ?? r.sale_date,
+      beds: r.beds ?? 0,
+      baths: r.baths ?? 0,
+      sqft: r.sqft ?? undefined,
+      description: r.description ?? '',
+      propertyType: r.property_type as RecentSale['propertyType'],
+      offers: r.offers ?? undefined,
+      neighborhood: r.neighborhood ?? undefined,
+      overAsking: r.list_price != null ? r.sale_price > r.list_price : undefined,
+    }));
+  } catch {
+    return manualSales;
+  }
+}
 
 export const metadata = {
   title: 'South Orange NJ Real Estate | Homes, Prices & Market Guide',
@@ -136,7 +173,8 @@ const neighborhoods = [
   },
 ];
 
-export default function RealEstatePage() {
+export default async function RealEstatePage() {
+  const recentSales = await getSales();
   return (
     <div style={{ background: BG, minHeight: '100vh' }}>
       {/* Hero */}
