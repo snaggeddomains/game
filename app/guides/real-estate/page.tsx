@@ -1,3 +1,42 @@
+import { createClient } from '@supabase/supabase-js';
+import { recentSales as manualSales } from './recent-sales-data';
+import type { RecentSale } from './recent-sales-data';
+
+async function getSales(): Promise<RecentSale[]> {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) return manualSales;
+
+  try {
+    const supabase = createClient(url, key);
+    const { data, error } = await supabase
+      .from('so_recent_sales')
+      .select('*')
+      .order('sale_date', { ascending: false })
+      .limit(20);
+    if (error || !data?.length) return manualSales;
+
+    return data.map(r => ({
+      id: r.id,
+      address: r.address,
+      salePrice: r.sale_price,
+      listPrice: r.list_price ?? r.sale_price,
+      saleDate: r.sale_date,
+      listedDate: r.listed_date ?? r.sale_date,
+      beds: r.beds ?? 0,
+      baths: r.baths ?? 0,
+      sqft: r.sqft ?? undefined,
+      description: r.description ?? '',
+      propertyType: r.property_type as RecentSale['propertyType'],
+      offers: r.offers ?? undefined,
+      neighborhood: r.neighborhood ?? undefined,
+      overAsking: r.list_price != null ? r.sale_price > r.list_price : undefined,
+    }));
+  } catch {
+    return manualSales;
+  }
+}
+
 export const metadata = {
   title: 'South Orange NJ Real Estate | Homes, Prices & Market Guide',
   description:
@@ -134,7 +173,8 @@ const neighborhoods = [
   },
 ];
 
-export default function RealEstatePage() {
+export default async function RealEstatePage() {
+  const recentSales = await getSales();
   return (
     <div style={{ background: BG, minHeight: '100vh' }}>
       {/* Hero */}
@@ -426,6 +466,147 @@ export default function RealEstatePage() {
           </p>
           <p style={{ color: TEXT, fontSize: 17, lineHeight: 1.75 }}>
             The tradeoff is real: property taxes are high, the housing stock is old, and the market is competitive. But for buyers who do their homework and buy in the right spot, South Orange has held its value well and has strong long-term fundamentals.
+          </p>
+        </section>
+
+        {/* Recent Sales */}
+        <section style={{ marginBottom: 52 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+            <h2
+              style={{
+                fontFamily: 'Georgia, serif',
+                fontSize: 26,
+                color: DARK_GREEN,
+                margin: 0,
+              }}
+            >
+              Recent Home Sales
+            </h2>
+            <span style={{ color: MUTED, fontSize: 13 }}>Public records · updated as sales close</span>
+          </div>
+          <div style={{ borderBottom: `2px solid ${GOLD}`, marginBottom: 24 }} />
+          <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>
+            A running list of recent closed sales in South Orange — address, sale price vs. list price, days on market, and number of offers where available. Data sourced from public NJ property transfer records.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {recentSales.map((sale) => {
+              const daysOnMarket = Math.round(
+                (new Date(sale.saleDate).getTime() - new Date(sale.listedDate).getTime()) / (1000 * 60 * 60 * 24)
+              );
+              const priceDiff = sale.salePrice - sale.listPrice;
+              const priceDiffPct = ((priceDiff / sale.listPrice) * 100).toFixed(1);
+              const overAsking = sale.salePrice > sale.listPrice;
+              const streetViewKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
+              const streetViewUrl = streetViewKey
+                ? `https://maps.googleapis.com/maps/api/streetview?size=600x380&location=${encodeURIComponent(sale.address)}&key=${streetViewKey}`
+                : null;
+
+              return (
+                <div
+                  key={sale.id}
+                  style={{
+                    background: '#FFFFFF',
+                    border: `1px solid ${STONE}`,
+                    borderRadius: 14,
+                    overflow: 'hidden',
+                    display: 'grid',
+                    gridTemplateColumns: 'minmax(0, 1fr)',
+                  }}
+                >
+                  {/* Street View Image */}
+                  {streetViewUrl ? (
+                    <div style={{ position: 'relative', width: '100%', aspectRatio: '16/7', background: STONE, overflow: 'hidden' }}>
+                      <img
+                        src={streetViewUrl}
+                        alt={`Street view of ${sale.address}`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ width: '100%', aspectRatio: '16/7', background: STONE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ color: MUTED, fontSize: 13 }}>Street view unavailable</span>
+                    </div>
+                  )}
+
+                  {/* Card Body */}
+                  <div style={{ padding: '20px 22px' }}>
+                    {/* Address + type badge */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 6, flexWrap: 'wrap' }}>
+                      <div style={{ fontFamily: 'Georgia, serif', fontSize: 17, fontWeight: 700, color: DARK_GREEN, lineHeight: 1.3 }}>
+                        {sale.address}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                        <span style={{ background: STONE, color: MUTED, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20 }}>
+                          {sale.propertyType}
+                        </span>
+                        {sale.neighborhood && (
+                          <span style={{ background: `${SAGE}33`, color: DARK_GREEN, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20 }}>
+                            {sale.neighborhood}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Beds / baths / sqft */}
+                    <div style={{ color: MUTED, fontSize: 13, marginBottom: 10 }}>
+                      {sale.beds} bed · {sale.baths} bath{sale.sqft ? ` · ${sale.sqft.toLocaleString()} sq ft` : ''}
+                    </div>
+
+                    {/* Description */}
+                    <p style={{ color: TEXT, fontSize: 14, lineHeight: 1.65, margin: '0 0 16px' }}>
+                      {sale.description}
+                    </p>
+
+                    {/* Price + stats row */}
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                        gap: 12,
+                        borderTop: `1px solid ${STONE}`,
+                        paddingTop: 14,
+                      }}
+                    >
+                      <div>
+                        <div style={{ color: MUTED, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Sale Price</div>
+                        <div style={{ color: DARK_GREEN, fontFamily: 'Georgia, serif', fontSize: 20, fontWeight: 700 }}>
+                          ${sale.salePrice.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: MUTED, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>List Price</div>
+                        <div style={{ color: TEXT, fontSize: 16 }}>
+                          ${sale.listPrice.toLocaleString()}
+                        </div>
+                        <div style={{ color: overAsking ? '#2D7A2D' : '#B44', fontSize: 12, fontWeight: 700, marginTop: 2 }}>
+                          {overAsking ? '+' : ''}{priceDiffPct}% {overAsking ? 'over asking' : 'under asking'}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: MUTED, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Days on Market</div>
+                        <div style={{ color: TEXT, fontSize: 16 }}>{daysOnMarket} days</div>
+                      </div>
+                      {sale.offers != null && (
+                        <div>
+                          <div style={{ color: MUTED, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Offers</div>
+                          <div style={{ color: TEXT, fontSize: 16 }}>{sale.offers} offers</div>
+                        </div>
+                      )}
+                      <div>
+                        <div style={{ color: MUTED, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Closed</div>
+                        <div style={{ color: TEXT, fontSize: 14 }}>
+                          {new Date(sale.saleDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p style={{ color: MUTED, fontSize: 12, lineHeight: 1.5, marginTop: 16, fontStyle: 'italic' }}>
+            Sample entries shown. Data populated from public NJ property transfer records as sales close. Street view images via Google Maps.
           </p>
         </section>
 
